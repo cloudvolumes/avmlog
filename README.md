@@ -15,7 +15,7 @@ But once they are located, each line is often intermingled with other requests a
 
 This tool uses the provided regexp to match target lines. 
 Once these are identified, the request number "PxxxxRxxxx" from each of these target lines is extracted.
-A second pass through the file is then performed and all log lines from those requests is printed.
+A second pass through the file is then performed and all log lines from those requests are printed.
 
 ## Platforms
 
@@ -48,9 +48,9 @@ This controls whether or not SQL statements are shown. The default is 0 which st
 
 ## Developer notes
 
-Download go: https://golang.org/dl/
-Getting started: https://golang.org/doc/install
-Cross-platform compilation: git clone git://github.com/davecheney/golang-crosscompile.git
+- Download go: https://golang.org/dl/
+- Getting started: https://golang.org/doc/install
+- Cross-platform compilation: git clone git://github.com/davecheney/golang-crosscompile.git
 
 From: <workspace>/src/github.com/<your-account>/avmlog
 - go install
