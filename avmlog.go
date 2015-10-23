@@ -11,14 +11,23 @@ import (
 )
 
 func main() {
-	filename := os.Args[1]
-	fmt.Println(fmt.Sprintf("Opening file: %s", filename))
-
 	job_flag := flag.Int("jobs", 0, "Show background jobs")
 	sql_flag := flag.Int("sql", 0, "Show SQL statements")
 
+	flag.Parse()
+	args := flag.Args()
+
+	if len(args) < 2 {
+		fmt.Println(fmt.Sprintf("Usage: avmlog -jobs=0|1 -sql=0|1 avmanager_filename.log regexp"))
+		fmt.Println("Example: avm -jobs=1 \"/path/to/manager/log/production.log\" \"username|computername\"")
+		os.Exit(1)
+	}
+
 	fmt.Println(fmt.Sprintf("Show background jobs: %d", *job_flag))
 	fmt.Println(fmt.Sprintf("Show SQL: %d", *sql_flag))
+
+	filename := args[0]
+	fmt.Println(fmt.Sprintf("Opening file: %s", filename))
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -26,12 +35,7 @@ func main() {
 	}
 	defer file.Close()
 
-	arg_regexp := os.Args[2]
-
-	if len(arg_regexp) < 1 {
-		fmt.Println("Usage: avmlog filename regexp")
-		os.Exit(1)
-	}
+	arg_regexp := args[1]
 
 	line_count     := 0
 	request_ids    := make([]string, 20)
