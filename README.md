@@ -56,6 +56,8 @@ Things someone can do to improve this:
 - Add ability to specify user and computer directly instead of in a regexp
 - Add ability to remove DEBUG lines
 - Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
+- Write output to a file
+- Write separate output files for each request identifier
 
 
 ## Developer notes
