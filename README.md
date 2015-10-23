@@ -46,6 +46,17 @@ each background job has a unique request identifier (PxxxxDJxxx) so only relevan
 
 This controls whether or not SQL statements are shown. The default is 0 which strips them out.
 
+## TODO
+
+Things someone can do to improve this:
+
+- Allow processing of multiple files (to account for load balanced Managers)
+- Add ability to exclude log lines that occurred before a specific time
+- Add ability to provide a custom exclusion regexp
+- Add ability to specify user and computer directly instead of in a regexp
+- Add ability to remove DEBUG lines
+- Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
+
 
 ## Developer notes
 
