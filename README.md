@@ -17,6 +17,12 @@ This tool uses the provided regexp to match target lines.
 Once these are identified, the request number "PxxxxRxxxx" from each of these target lines is extracted.
 A second pass through the file is then performed and all log lines from those requests is printed.
 
+## Platforms
+
+Windows: bin/avmlog.exe
+Linux: bin/avmlog
+
+
 ## Usage
 
 avmlog [flags] [avmanager_filename.log] [target-line-regexp]
@@ -38,3 +44,14 @@ each background job has a unique request identifier (PxxxxDJxxx) so only relevan
 #### -sql=0/1
 
 This controls whether or not SQL statements are shown. The default is 0 which strips them out.
+
+
+## Developer notes
+
+Download go: https://golang.org/dl/
+Getting started: https://golang.org/doc/install
+Cross-platform compilation: git clone git://github.com/davecheney/golang-crosscompile.git
+
+From: <workspace>/src/github.com/<your-account>/avmlog
+- go install
+- go-windows-386 build  (after doing: source golang-crosscompile/crosscompile.bash)
