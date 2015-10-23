@@ -26,7 +26,9 @@ A second pass through the file is then performed and all log lines from those re
 
 ## Usage
 
-avmlog [flags] [avmanager_filename.log] [target-line-regexp]
+You must pass a Manager log file and a regexp (start by using "user-name|computer-name")
+
+avmlog [flags] [filename (manager/log/production.log)] [target-line-regex (user-name|computer-name)]
 
 For example:
 avmlog "/users/slawson/Documents/scale.log" "apvuser03734|av-pd1-pl8-0787"
@@ -66,6 +68,6 @@ Things someone can do to improve this:
 - Getting started: https://golang.org/doc/install
 - Cross-platform compilation: git clone git://github.com/davecheney/golang-crosscompile.git
 
-From: <workspace>/src/github.com/<your-account>/avmlog
+From: [workspace]/src/github.com/[your-account]/avmlog
 - go install
 - go-windows-386 build  (after doing: source golang-crosscompile/crosscompile.bash)
