@@ -17,10 +17,11 @@ This tool uses the provided regexp to match target lines.
 Once these are identified, the request number "PxxxxRxxxx" from each of these target lines is extracted.
 A second pass through the file is then performed and all log lines from those requests are printed.
 
+
 ## Platforms
 
-Windows: bin/avmlog.exe
-Linux: bin/avmlog
+- Windows: bin/avmlog.exe
+- Linux: bin/avmlog
 
 
 ## Usage
