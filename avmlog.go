@@ -80,7 +80,7 @@ func main() {
 	timestamp_regexp := regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 	sql_regexp       := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
 	nltm_regexp      := regexp.MustCompile(" \\(NTLM\\) ")
-	target_regexp    := regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
+	request_regexp   := regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
 
 	scanner := bufio.NewScanner(fp)
 
@@ -99,7 +99,7 @@ func main() {
 				}
 
 				if after {
-					request := target_regexp.FindStringSubmatch(line)
+					request := request_regexp.FindStringSubmatch(line)
 
 					if len(request) > 1 {
 						is_job := strings.Contains(request[1], "DJ")
