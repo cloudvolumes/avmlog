@@ -24,3 +24,5 @@ _testmain.go
 
 # Rubymine
 .idea/
+
+.DS_Store
