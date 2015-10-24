@@ -18,10 +18,12 @@ Once these target lines are identified, the request identifier "PxxxxRxxxx" from
 A second pass through the file is then performed and all log lines from those requests are printed.
 
 
-## Platforms
+## Binaries
 
-- Windows: bin/avmlog.exe
-- Linux: bin/avmlog
+These are available under the release section on github: https://github.com/cloudvolumes/avmlog/releases
+
+- Windows: avmlog.exe
+- Linux/Mac: avmlog
 
 
 ## Usage
