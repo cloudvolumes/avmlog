@@ -75,6 +75,12 @@ Things someone can do to improve this:
 - Add ability to remove DEBUG lines
 - Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
 - Write separate output files for each request identifier
+- Show the first line of each request
+- Allow filtering of non-200 requests
+- Add a context flag to pull back the X lines above/below a match
+- Add flag to only show matches, instead of the full request
+- Add flag to group requests so all their lines are together
+- Add a flag to covert timestamps from UTC
 
 
 ## Developer notes
