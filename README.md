@@ -84,3 +84,6 @@ Things someone can do to improve this:
 From: [workspace]/src/github.com/[your-account]/avmlog
 - go install
 - go-windows-386 build  (after doing: source golang-crosscompile/crosscompile.bash)
+
+Release names go in order alphabetically using the most liked name here:
+http://www.superherodb.com/characters/
