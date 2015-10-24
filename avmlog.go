@@ -71,20 +71,21 @@ func main() {
 			line := scanner.Text();
 			if line_regexp.MatchString(line) {
 				request := target_regexp.FindStringSubmatch(line)
-				timestamp := timestamp_regexp.FindStringSubmatch(line)
 
 				input := true
 
 				if len(request) < 2 {
 					input = false
-				} else if parse_time && len(timestamp) > 1 {
-					line_time, e := time.Parse(time_layout, timestamp[1])
+				} else if parse_time {
+					if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
+						line_time, e := time.Parse(time_layout, timestamp[1])
 
-					if e != nil {
-						fmt.Println("Got error %s", e)
-						input = false
-					} else if line_time.Before(time_after) {
-						input = false
+						if e != nil {
+							fmt.Println("Got error %s", e)
+							input = false
+						} else if line_time.Before(time_after) {
+							input = false
+						}
 					}
 				}
 
