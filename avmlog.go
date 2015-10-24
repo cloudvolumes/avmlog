@@ -61,7 +61,7 @@ func main() {
 	line_strexp      := *match_str
 	unique_strexp    := ""
 
-	timestamp_regexp := regexp.MustCompile("^(\\[.*?\\])")
+	timestamp_regexp := regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 	sql_regexp       := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
 	nltm_regexp      := regexp.MustCompile(" \\(NTLM\\) ")
 	target_regexp    := regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
@@ -72,31 +72,31 @@ func main() {
 		for scanner.Scan() {
 			line := scanner.Text();
 			if line_regexp.MatchString(line) {
-				request := target_regexp.FindStringSubmatch(line)
+				after := !parse_time // if not parsing time, then all lines are valid
 
-				input := true
-
-				if len(request) < 2 {
-					input = false
-				} else if parse_time {
+				if !after {
 					if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
-						if !is_after_time(&timestamp[1], &time_after) {
-							input = false
+						if is_after_time(&timestamp[1], &time_after) {
+							after = true
 						}
 					}
 				}
 
-				if input {
-					is_job := strings.Contains(request[1], "DJ")
+				if after {
+					request := target_regexp.FindStringSubmatch(line)
 
-					if is_job {
-						if *job_flag > 0 {
-							request_ids = append(request_ids, request[1])
+					if len(request) > 1 {
+						is_job := strings.Contains(request[1], "DJ")
+
+						if is_job {
+							if *job_flag > 0 {
+								request_ids = append(request_ids, request[1])
+							} else {
+								fmt.Println(line)
+							}
 						} else {
-							fmt.Println(line)
+							request_ids = append(request_ids, request[1])
 						}
-					} else {
-						request_ids = append(request_ids, request[1])
 					}
 				}
 			}
@@ -138,9 +138,11 @@ func main() {
 			fmt.Println(fmt.Sprintf("Found 0 AVM Request IDs for %s", line_strexp))
 			os.Exit(2)
 		}
-	}
 
-	file.Seek(0, 0)
+		file.Seek(0, 0)  // go back to the top (rewind)
+	} else {
+		fmt.Println("No matchers provided, skipping match phase")
+	}
 
 	output_match   := len(unique_strexp) > 0
 	output_regexp  := regexp.MustCompile(unique_strexp)
@@ -150,8 +152,19 @@ func main() {
 		line := output_scanner.Text();
 
 		output := true
+		after := !parse_time // if not parsing time, then all lines are valid
 
-		if output_match && !output_regexp.MatchString(line) {
+		if !after {
+			if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
+				if is_after_time(&timestamp[1], &time_after) {
+					after = true
+				}
+			}
+		}
+
+		if !after {
+			output = false
+		} else if output_match && !output_regexp.MatchString(line) {
 			output = false
 		} else if *sql_flag < 1 && sql_regexp.MatchString(line) {
 			output = false
