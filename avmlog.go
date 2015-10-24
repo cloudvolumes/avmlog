@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"io"
 	"regexp"
 	"strings"
 	"flag"
 	"time"
+	"compress/gzip"
 )
 
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
@@ -56,6 +58,20 @@ func main() {
 	}
 	defer file.Close()
 
+	var fp io.Reader;
+
+	if strings.HasSuffix(filename, ".gz") {
+		gz_file, err := gzip.NewReader(file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer gz_file.Close()
+
+		fp = gz_file
+	} else {
+		fp = file
+	}
+
 	line_count       := 0
 	request_ids      := make([]string, 0)
 	line_strexp      := *match_str
@@ -66,7 +82,7 @@ func main() {
 	nltm_regexp      := regexp.MustCompile(" \\(NTLM\\) ")
 	target_regexp    := regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
 
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(fp)
 
 	if line_regexp, err := regexp.Compile(line_strexp); len(line_strexp) > 0 && err == nil {
 		for scanner.Scan() {
@@ -146,7 +162,7 @@ func main() {
 
 	output_match   := len(unique_strexp) > 0
 	output_regexp  := regexp.MustCompile(unique_strexp)
-	output_scanner := bufio.NewScanner(file)
+	output_scanner := bufio.NewScanner(fp)
 
 	for output_scanner.Scan() {
 		line := output_scanner.Text();
