@@ -48,6 +48,13 @@ each background job has a unique request identifier (PxxxxDJxxx) so only relevan
 
 This controls whether or not SQL statements are shown. The default is 0 which strips them out.
 
+#### -after="YYYY-MM-DD HH:II:SS"
+
+Only include log lines from requests that occurred after this time.
+This filter is used when determining which request identifiers (PxxxxxRxxxx) to include.
+So it is possible that some lines from before this time will be printed if they belong to a request that crosses over.
+
+
 ## TODO
 
 Things someone can do to improve this:
