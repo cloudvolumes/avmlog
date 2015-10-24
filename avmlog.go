@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
+
 func main() {
 	job_flag := flag.Int("jobs", 0, "Show background jobs")
 	sql_flag := flag.Int("sql", 0, "Show SQL statements")
@@ -23,8 +25,8 @@ func main() {
 	// Time layouts must use the
 	// reference time `Mon Jan 2 15:04:05 MST 2006` to show the
 	// pattern with which to format/parse a given time/string
-	time_layout      := "[2006-01-02 15:04:05 MST]"
-	time_after, e    := time.Parse(time_layout, fmt.Sprintf("[%s UTC]", *after_str))
+
+	time_after, e    := time.Parse(TIME_LAYOUT, fmt.Sprintf("[%s UTC]", *after_str))
 	parse_time       := false
 
 	if e != nil {
@@ -78,12 +80,7 @@ func main() {
 					input = false
 				} else if parse_time {
 					if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
-						line_time, e := time.Parse(time_layout, timestamp[1])
-
-						if e != nil {
-							fmt.Println("Got error %s", e)
-							input = false
-						} else if line_time.Before(time_after) {
+						if !is_after_time(&timestamp[1], &time_after) {
 							input = false
 						}
 					}
@@ -175,4 +172,15 @@ func main() {
 func usage() {
 	fmt.Println(fmt.Sprintf("Usage: avmlog -match=\"regexp\" -jobs=0|1 -sql=0|1 -after=\"YYYY-MM-DD HH:II::SS\" avmanager_filename.log"))
 	fmt.Println("Example: avm -match=\"username|computername\" \"/path/to/manager/log/production.log\"")
+}
+
+func is_after_time(timestamp *string, time_after *time.Time) bool {
+	if line_time, e := time.Parse(TIME_LAYOUT, *timestamp); e != nil {
+		fmt.Println("Got error %s", e)
+		return false
+	} else if line_time.Before(*time_after) {
+		return false
+	}
+
+	return true
 }
