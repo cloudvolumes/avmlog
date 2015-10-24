@@ -37,8 +37,7 @@ func main() {
 	}
 
 	if len(args) < 1 {
-		fmt.Println(fmt.Sprintf("Usage: avmlog -match=\"regexp\" -jobs=0|1 -sql=0|1 -after=\"YYYY-MM-DD HH:II::SS\" avmanager_filename.log"))
-		fmt.Println("Example: avm -match=\"username|computername\" \"/path/to/manager/log/production.log\"")
+		usage()
 		os.Exit(1)
 	}
 
@@ -170,4 +169,9 @@ func main() {
 	if err := output_scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func usage() {
+	fmt.Println(fmt.Sprintf("Usage: avmlog -match=\"regexp\" -jobs=0|1 -sql=0|1 -after=\"YYYY-MM-DD HH:II::SS\" avmanager_filename.log"))
+	fmt.Println("Example: avm -match=\"username|computername\" \"/path/to/manager/log/production.log\"")
 }
