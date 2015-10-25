@@ -124,11 +124,13 @@ func main() {
 			}
 		}
 
+		fmt.Println("") // empty line
+
 		if err := scanner.Err(); err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println("Generating unique request identifiers", len(request_ids))
+		fmt.Println("Generating unique request identifiers:", len(request_ids))
 		unique_set := make(map[string]bool, len(request_ids))
 
 		for _, x := range request_ids {
@@ -158,6 +160,16 @@ func main() {
 		file.Seek(0, 0)  // go back to the top (rewind)
 	} else {
 		fmt.Println("No matchers provided, skipping match phase")
+	}
+
+	if strings.HasSuffix(filename, ".gz") {
+		gz_file2, err := gzip.NewReader(file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer gz_file2.Close()
+
+		fp = gz_file2
 	}
 
 	output_match   := len(unique_strexp) > 0
