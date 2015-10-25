@@ -82,6 +82,7 @@ Things someone can do to improve this:
 - Add flag to group requests so all their lines are together
 - Add a flag to covert timestamps from UTC
 - Add short-versions of the flags like -m/-a/-j etc
+- Figure out how to use FlagSet: https://golang.org/pkg/flag/
 
 
 ## Developer notes
