@@ -52,24 +52,16 @@ func main() {
 	filename := args[0]
 	fmt.Println(fmt.Sprintf("Opening file: %s", filename))
 
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
+	file := openFile(filename)
 	defer file.Close()
 
-	var fp io.Reader;
+	var reader io.Reader = file
 
-	if strings.HasSuffix(filename, ".gz") {
-		gz_file, err := gzip.NewReader(file)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer gz_file.Close()
+	if isGzip(filename) {
+		parse_gz_reader := getGzipReader(file)
+		defer parse_gz_reader.Close()
 
-		fp = gz_file
-	} else {
-		fp = file
+		reader = parse_gz_reader
 	}
 
 	timestamp_regexp := regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
@@ -85,7 +77,7 @@ func main() {
 	request_ids := make([]string, 0)
 
 	if line_regexp, err := regexp.Compile(line_strexp); len(line_strexp) > 0 && err == nil {
-		scanner := bufio.NewScanner(fp);
+		scanner := bufio.NewScanner(reader);
 
 		for scanner.Scan() {
 			line := scanner.Text();
@@ -142,20 +134,17 @@ func main() {
 		fmt.Println("No matchers provided, skipping match phase")
 	}
 
-	if strings.HasSuffix(filename, ".gz") {
-		gz_file2, err := gzip.NewReader(file)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer gz_file2.Close()
+	if isGzip(filename) {
+		output_gz_reader := getGzipReader(file)
+		defer output_gz_reader.Close()
 
-		fp = gz_file2
+		reader = output_gz_reader
 	}
 
 	line_count = 0
 	line_after = !parse_time // if not parsing time, then all lines are valid
 
-	output_scanner := bufio.NewScanner(fp);
+	output_scanner := bufio.NewScanner(reader);
 
 	for output_scanner.Scan() {
 		line := output_scanner.Text();
@@ -227,4 +216,25 @@ func generateRequestIdMap(request_ids *[]string) map[string]bool {
 	}
 
 	return unique_map
+}
+
+func openFile(filename string) *os.File {
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return file
+}
+
+func isGzip(filename string) bool {
+	return strings.HasSuffix(filename, ".gz")
+}
+
+func getGzipReader(file *os.File) *gzip.Reader {
+	gz_reader, err := gzip.NewReader(file)
+	if err != nil {
+	log.Fatal(err)
+	}
+
+	return gz_reader
 }
