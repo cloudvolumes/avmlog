@@ -71,12 +71,13 @@ func main() {
 
 	var unique_map map[string]bool;
 
-	line_count  := 0
-	line_after  := !parse_time // if not parsing time, then all lines are valid
 	line_strexp := *match_str
-	request_ids := make([]string, 0)
 
 	if line_regexp, err := regexp.Compile(line_strexp); len(line_strexp) > 0 && err == nil {
+		line_count  := 0
+		line_after  := !parse_time // if not parsing time, then all lines are valid
+		request_ids := make([]string, 0)
+
 		scanner := bufio.NewScanner(reader);
 
 		for scanner.Scan() {
@@ -141,8 +142,8 @@ func main() {
 		reader = output_gz_reader
 	}
 
-	line_count = 0
-	line_after = !parse_time // if not parsing time, then all lines are valid
+	line_count := 0
+	line_after := !parse_time // if not parsing time, then all lines are valid
 
 	output_scanner := bufio.NewScanner(reader);
 
