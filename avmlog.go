@@ -15,6 +15,7 @@ import (
 
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
+var request_regexp   *regexp.Regexp = regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
 
 func main() {
 	job_flag := flag.Int("jobs", 0, "Show background jobs")
@@ -67,7 +68,6 @@ func main() {
 
 	sql_regexp       := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
 	nltm_regexp      := regexp.MustCompile(" \\(NTLM\\) ")
-	request_regexp   := regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
 
 	var unique_map map[string]bool;
 
@@ -93,19 +93,16 @@ func main() {
 				}
 
 				if line_after {
-					request := request_regexp.FindStringSubmatch(line)
+					if request_id := extractRequestId(line); len(request_id) > 1 {
 
-					if len(request) > 1 {
-						is_job := strings.Contains(request[1], "DJ")
-
-						if is_job {
+						if is_job := strings.Contains(request_id, "DJ"); is_job {
 							if *job_flag > 0 {
-								request_ids = append(request_ids, request[1])
+								request_ids = append(request_ids, request_id)
 							} else {
 								//fmt.Println(line)
 							}
 						} else {
-							request_ids = append(request_ids, request[1])
+							request_ids = append(request_ids, request_id)
 						}
 					}
 				}
@@ -144,6 +141,7 @@ func main() {
 
 	line_count := 0
 	line_after := !parse_time // if not parsing time, then all lines are valid
+	has_requests := len(unique_map) > 0
 
 	output_scanner := bufio.NewScanner(reader);
 
@@ -166,8 +164,12 @@ func main() {
 		}
 
 		if line_after {
-			if request_id := request_regexp.FindStringSubmatch(line); len(request_id) > 1 {
-				output = len(request_id[1]) > 0 && unique_map[request_id[1]]
+			request_id := extractRequestId(line)
+
+			if has_requests {
+				output = len(request_id) > 0 && unique_map[request_id]
+			} else {
+				output = true
 			}
 		}
 
@@ -206,8 +208,16 @@ func isAfterTime(timestamp string, time_after *time.Time) bool {
 }
 
 func extractTimestamp(line string) string {
-	if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
-		return timestamp[1]
+	if timestamp_match := timestamp_regexp.FindStringSubmatch(line); len(timestamp_match) > 1 {
+		return timestamp_match[1]
+	} else {
+		return ""
+	}
+}
+
+func extractRequestId(line string) string {
+	if request_match := request_regexp.FindStringSubmatch(line); len(request_match) > 1 {
+		return request_match[1]
 	} else {
 		return ""
 	}
