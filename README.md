@@ -81,6 +81,7 @@ Things someone can do to improve this:
 - Add flag to only show matches, instead of the full request
 - Add flag to group requests so all their lines are together
 - Add a flag to covert timestamps from UTC
+- Add short-versions of the flags like -m/-a/-j etc
 
 
 ## Developer notes
