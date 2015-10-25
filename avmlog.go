@@ -14,6 +14,7 @@ import (
 )
 
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
+var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 
 func main() {
 	job_flag := flag.Int("jobs", 0, "Show background jobs")
@@ -64,7 +65,6 @@ func main() {
 		reader = parse_gz_reader
 	}
 
-	timestamp_regexp := regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 	sql_regexp       := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
 	nltm_regexp      := regexp.MustCompile(" \\(NTLM\\) ")
 	request_regexp   := regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
@@ -85,8 +85,8 @@ func main() {
 			if line_regexp.MatchString(line) {
 
 				if !line_after {
-					if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
-						if is_after_time(&timestamp[1], &time_after) {
+					if timestamp := extractTimestamp(line); len(timestamp) > 1 {
+						if isAfterTime(timestamp, &time_after) {
 							line_after = true
 						}
 					}
@@ -157,8 +157,8 @@ func main() {
 				fmt.Print(fmt.Sprintf("Reading: %d\r", line_count))
 			}
 
-			if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
-				if is_after_time(&timestamp[1], &time_after) {
+			if timestamp := extractTimestamp(line); len(timestamp) > 1 {
+				if isAfterTime(timestamp, &time_after) {
 					fmt.Println("\n") // empty line
 					line_after = true
 				}
@@ -194,8 +194,8 @@ func usage() {
 	fmt.Println("Example: avm -match=\"username|computername\" \"/path/to/manager/log/production.log\"")
 }
 
-func is_after_time(timestamp *string, time_after *time.Time) bool {
-	if line_time, e := time.Parse(TIME_LAYOUT, *timestamp); e != nil {
+func isAfterTime(timestamp string, time_after *time.Time) bool {
+	if line_time, e := time.Parse(TIME_LAYOUT, timestamp); e != nil {
 		fmt.Println("Got error %s", e)
 		return false
 	} else if line_time.Before(*time_after) {
@@ -203,6 +203,14 @@ func is_after_time(timestamp *string, time_after *time.Time) bool {
 	}
 
 	return true
+}
+
+func extractTimestamp(line string) string {
+	if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
+		return timestamp[1]
+	} else {
+		return ""
+	}
 }
 
 func generateRequestIdMap(request_ids *[]string) map[string]bool {
