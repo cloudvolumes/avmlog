@@ -108,7 +108,7 @@ func main() {
 							if *job_flag > 0 {
 								request_ids = append(request_ids, request[1])
 							} else {
-								fmt.Println(line)
+								//fmt.Println(line)
 							}
 						} else {
 							request_ids = append(request_ids, request[1])
