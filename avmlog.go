@@ -130,7 +130,7 @@ func main() {
 			os.Exit(2)
 		}
 
-		file.Seek(0, 0)  // go back to the top (rewind)
+		rewindFile(file)
 	} else {
 		fmt.Println("No matchers provided, skipping match phase")
 	}
@@ -246,4 +246,8 @@ func getGzipReader(file *os.File) *gzip.Reader {
 	}
 
 	return gz_reader
+}
+
+func rewindFile(file *os.File) {
+	file.Seek(0, 0)  // go back to the top (rewind)
 }
