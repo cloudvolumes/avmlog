@@ -14,6 +14,7 @@ import (
 )
 
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
+var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 var request_regexp   *regexp.Regexp = regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
 
@@ -94,15 +95,10 @@ func main() {
 
 				if line_after {
 					if request_id := extractRequestId(line); len(request_id) > 1 {
+						request_ids = append(request_ids, request_id)
 
-						if is_job := strings.Contains(request_id, "DJ"); is_job {
-							if *job_flag > 0 {
-								request_ids = append(request_ids, request_id)
-							} else {
-								//fmt.Println(line)
-							}
-						} else {
-							request_ids = append(request_ids, request_id)
+						if !isJob(request_id) || *job_flag > 0 {
+							//
 						}
 					}
 				}
@@ -143,6 +139,9 @@ func main() {
 	line_after := !parse_time // if not parsing time, then all lines are valid
 	has_requests := len(unique_map) > 0
 
+	line_regexp, err := regexp.Compile(line_strexp);
+	has_matcher      := len(line_strexp) > 0 && err == nil
+
 	output_scanner := bufio.NewScanner(reader);
 
 	for output_scanner.Scan() {
@@ -167,7 +166,15 @@ func main() {
 			request_id := extractRequestId(line)
 
 			if has_requests {
-				output = len(request_id) > 0 && unique_map[request_id]
+				if len(request_id) > 0 && unique_map[request_id] {
+					if isJob(request_id) && *job_flag < 1 {
+						// if this is a job and jobs are hidden,
+						// only print the line if it contains the original regexp
+						output = has_matcher && line_regexp.MatchString(line)
+					} else {
+						output = true
+					}
+				}
 			} else {
 				output = true
 			}
@@ -205,6 +212,10 @@ func isAfterTime(timestamp string, time_after *time.Time) bool {
 	}
 
 	return true
+}
+
+func isJob(request_id string) bool {
+	return job_regexp.MatchString(request_id)
 }
 
 func extractTimestamp(line string) string {
