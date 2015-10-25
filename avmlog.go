@@ -72,33 +72,34 @@ func main() {
 		fp = file
 	}
 
-	line_count       := 0
-	request_ids      := make([]string, 0)
-	line_strexp      := *match_str
-	unique_strexp    := ""
-
 	timestamp_regexp := regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 	sql_regexp       := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
 	nltm_regexp      := regexp.MustCompile(" \\(NTLM\\) ")
 	request_regexp   := regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
 
-	scanner := bufio.NewScanner(fp)
+	var unique_map map[string]bool;
+
+	line_count  := 0
+	line_after  := !parse_time // if not parsing time, then all lines are valid
+	line_strexp := *match_str
+	request_ids := make([]string, 0)
 
 	if line_regexp, err := regexp.Compile(line_strexp); len(line_strexp) > 0 && err == nil {
+		scanner := bufio.NewScanner(fp);
+
 		for scanner.Scan() {
 			line := scanner.Text();
 			if line_regexp.MatchString(line) {
-				after := !parse_time // if not parsing time, then all lines are valid
 
-				if !after {
+				if !line_after {
 					if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
 						if is_after_time(&timestamp[1], &time_after) {
-							after = true
+							line_after = true
 						}
 					}
 				}
 
-				if after {
+				if line_after {
 					request := request_regexp.FindStringSubmatch(line)
 
 					if len(request) > 1 {
@@ -117,10 +118,8 @@ func main() {
 				}
 			}
 
-			line_count++
-
-			if line_count % 10000 == 0 {
-				fmt.Print(".")
+			if line_count++; line_count % 10000 == 0 {
+				fmt.Print(fmt.Sprintf("Reading: %d\r", line_count))
 			}
 		}
 
@@ -130,30 +129,11 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Println("Generating unique request identifiers:", len(request_ids))
-		unique_set := make(map[string]bool, len(request_ids))
+		fmt.Println(fmt.Sprintf("Found %d lines matching \"%s\"", len(request_ids), line_strexp))
+		unique_map = generateRequestIdMap(&request_ids)
 
-		for _, x := range request_ids {
-			unique_set[x] = true
-		}
-
-		unique_ids := make([]string, 0, len(unique_set))
-
-		for x := range unique_set {
-			if len(x) > 0 {
-				unique_ids = append(unique_ids, x)
-			}
-		}
-
-		for i := 0; i < len(unique_ids); i++ {
-			fmt.Println(fmt.Sprintf("Request ID: %s", unique_ids[i]))
-		}
-
-		unique_strexp = strings.Join(unique_ids, "|")
-		fmt.Println(unique_strexp)
-
-		if len(unique_strexp) < 1 {
-			fmt.Println(fmt.Sprintf("Found 0 AVM Request IDs for %s", line_strexp))
+		if len(unique_map) < 1 {
+			fmt.Println(fmt.Sprintf("Found 0 request identifiers", line_strexp))
 			os.Exit(2)
 		}
 
@@ -172,32 +152,41 @@ func main() {
 		fp = gz_file2
 	}
 
-	output_match   := len(unique_strexp) > 0
-	output_regexp  := regexp.MustCompile(unique_strexp)
-	output_scanner := bufio.NewScanner(fp)
+	line_count = 0
+	line_after = !parse_time // if not parsing time, then all lines are valid
+
+	output_scanner := bufio.NewScanner(fp);
 
 	for output_scanner.Scan() {
 		line := output_scanner.Text();
 
-		output := true
-		after := !parse_time // if not parsing time, then all lines are valid
+		output := false
 
-		if !after {
+		if !line_after {
+			if line_count++; line_count % 10000 == 0 {
+				fmt.Print(fmt.Sprintf("Reading: %d\r", line_count))
+			}
+
 			if timestamp := timestamp_regexp.FindStringSubmatch(line); len(timestamp) > 1 {
 				if is_after_time(&timestamp[1], &time_after) {
-					after = true
+					fmt.Println("\n") // empty line
+					line_after = true
 				}
 			}
 		}
 
-		if !after {
-			output = false
-		} else if output_match && !output_regexp.MatchString(line) {
-			output = false
-		} else if *sql_flag < 1 && sql_regexp.MatchString(line) {
-			output = false
-		} else if nltm_regexp.MatchString(line) {
-			output = false
+		if line_after {
+			if request_id := request_regexp.FindStringSubmatch(line); len(request_id) > 1 {
+				output = len(request_id[1]) > 0 && unique_map[request_id[1]]
+			}
+		}
+
+		if output {
+			if *sql_flag < 1 && sql_regexp.MatchString(line) {
+				output = false
+			} else if nltm_regexp.MatchString(line) {
+				output = false
+			}
 		}
 
 		if output {
@@ -224,4 +213,18 @@ func is_after_time(timestamp *string, time_after *time.Time) bool {
 	}
 
 	return true
+}
+
+func generateRequestIdMap(request_ids *[]string) map[string]bool {
+	unique_map := make(map[string]bool, len(*request_ids))
+
+	for _, x := range *request_ids {
+		unique_map[x] = true
+	}
+
+	for k, _ := range unique_map {
+		fmt.Println(fmt.Sprintf("Request ID: %s", k))
+	}
+
+	return unique_map
 }
