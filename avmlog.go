@@ -21,6 +21,7 @@ var request_regexp   *regexp.Regexp = regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[
 func main() {
 	job_flag := flag.Int("jobs", 0, "Show background jobs")
 	sql_flag := flag.Int("sql", 0, "Show SQL statements")
+	ntlm_flag := flag.Bool("ntlm", false, "Show NTLM lines")
 	after_str := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
 	match_str := flag.String("match", "", "Regexp for requests to gather")
 
@@ -67,8 +68,8 @@ func main() {
 		reader = parse_gz_reader
 	}
 
-	sql_regexp       := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
-	nltm_regexp      := regexp.MustCompile(" \\(NTLM\\) ")
+	sql_regexp := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
+	ntlm_regexp := regexp.MustCompile(" \\(NTLM\\) ")
 
 	var unique_map map[string]bool;
 
@@ -183,8 +184,8 @@ func main() {
 		if output {
 			if *sql_flag < 1 && sql_regexp.MatchString(line) {
 				output = false
-			} else if nltm_regexp.MatchString(line) {
-				output = false
+			} else if !*ntlm_flag && ntlm_regexp.MatchString(line) {
+				//output = false
 			}
 		}
 
@@ -199,7 +200,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Println(fmt.Sprintf("Usage: avmlog -match=\"regexp\" -jobs=0|1 -sql=0|1 -after=\"YYYY-MM-DD HH:II::SS\" avmanager_filename.log"))
+	fmt.Println(fmt.Sprintf("Usage: avmlog -match=\"regexp\" -jobs=0|1 -sql=0|1 -ntlm=true/false -after=\"YYYY-MM-DD HH:II::SS\" avmanager_filename.log"))
 	fmt.Println("Example: avm -match=\"username|computername\" \"/path/to/manager/log/production.log\"")
 }
 
