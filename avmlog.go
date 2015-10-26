@@ -19,9 +19,9 @@ var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ U
 var request_regexp   *regexp.Regexp = regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
 
 func main() {
-	job_flag := flag.Int("jobs", 0, "Show background jobs")
+	job_flag := flag.Bool("jobs", false, "Show background jobs")
 	job_lines_flag := flag.Bool("job_lines", false, "Show matching lines from background jobs")
-	sql_flag := flag.Int("sql", 0, "Show SQL statements")
+	sql_flag := flag.Bool("sql", false, "Show SQL statements")
 	ntlm_flag := flag.Bool("ntlm", false, "Show NTLM lines")
 	after_str := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
 	match_str := flag.String("match", "", "Regexp for requests to gather")
@@ -39,7 +39,8 @@ func main() {
 	if e != nil {
 		if len(*after_str) > 0 {
 			fmt.Println(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *after_str))
-			os.Exit(4)
+			usage()
+			os.Exit(2)
 		}
 	} else {
 		parse_time = true
@@ -47,12 +48,12 @@ func main() {
 
 	if len(args) < 1 {
 		usage()
-		os.Exit(1)
+		os.Exit(2)
 	}
 
-	fmt.Println(fmt.Sprintf("Show background jobs: %d", *job_flag))
-	fmt.Println(fmt.Sprintf("Show lines from background jobs: %b", *job_lines_flag))
-	fmt.Println(fmt.Sprintf("Show SQL: %d", *sql_flag))
+	fmt.Println(fmt.Sprintf("Show background jobs: %t", *job_flag))
+	fmt.Println(fmt.Sprintf("Show lines from background jobs: %t", *job_lines_flag))
+	fmt.Println(fmt.Sprintf("Show SQL: %t", *sql_flag))
 	fmt.Println(fmt.Sprintf("After: %s", *after_str))
 
 	filename := args[0]
@@ -98,7 +99,7 @@ func main() {
 
 				if line_after {
 					if request_id := extractRequestId(line); len(request_id) > 1 {
-						if *job_flag > 0 || *job_lines_flag || !isJob(request_id) {
+						if *job_flag || *job_lines_flag || !isJob(request_id) {
 							request_ids = append(request_ids, request_id)
 						}
 					}
@@ -168,7 +169,7 @@ func main() {
 
 			if has_requests {
 				if len(request_id) > 0 && unique_map[request_id] {
-					if *job_flag < 1 && isJob(request_id) {
+					if !*job_flag && isJob(request_id) {
             if *job_lines_flag {
 							// if this is a job and jobs are hidden,
 							// only print the line if job_lines is true and the line contains the original regexp
@@ -184,7 +185,7 @@ func main() {
 		}
 
 		if output {
-			if *sql_flag < 1 && sql_regexp.MatchString(line) {
+			if !*sql_flag && sql_regexp.MatchString(line) {
 				output = false
 			} else if !*ntlm_flag && ntlm_regexp.MatchString(line) {
 				output = false
@@ -202,7 +203,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Println(fmt.Sprintf("Usage: avmlog -match=\"regexp\" -jobs=0|1 -sql=0|1 -ntlm=true/false -after=\"YYYY-MM-DD HH:II::SS\" avmanager_filename.log"))
+	flag.PrintDefaults()
 	fmt.Println("Example: avm -match=\"username|computername\" \"/path/to/manager/log/production.log\"")
 }
 
