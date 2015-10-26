@@ -22,6 +22,7 @@ func main() {
 	hide_jobs_flag := flag.Bool("hide_jobs", false, "Hide background jobs")
 	hide_sql_flag  := flag.Bool("hide_sql", false, "Hide SQL statements")
 	hide_ntlm_flag := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
+	full_flag      := flag.Bool("full", false, "Show the full request/job for each found line")
 	after_str      := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
 	find_str       := flag.String("find", "", "Find lines matching this regexp")
 
@@ -77,7 +78,7 @@ func main() {
 
 	line_strexp := *find_str
 
-	if line_regexp, err := regexp.Compile(line_strexp); len(line_strexp) > 0 && err == nil {
+	if line_regexp, err := regexp.Compile(line_strexp); *full_flag && len(line_strexp) > 0 && err == nil {
 		line_count  := 0
 		line_after  := !parse_time // if not parsing time, then all lines are valid
 		request_ids := make([]string, 0)
@@ -174,15 +175,17 @@ func main() {
 						output = true
 					}
 				}
+			} else if has_matcher {
+				output = line_regexp.MatchString(line)
 			} else {
 				output = true
 			}
 		}
 
 		if output {
-			if !hide_sql_flag && sql_regexp.MatchString(line) {
+			if !*hide_sql_flag && sql_regexp.MatchString(line) {
 				output = false
-			} else if !hide_ntlm_flag && ntlm_regexp.MatchString(line) {
+			} else if !*hide_ntlm_flag && ntlm_regexp.MatchString(line) {
 				output = false
 			}
 		}
@@ -198,8 +201,9 @@ func main() {
 }
 
 func usage() {
-	flag.PrintDefaults()
 	fmt.Println("Example: avm -find=\"username|computername\" \"/path/to/manager/log/production.log\"")
+
+	flag.PrintDefaults()
 }
 
 func isAfterTime(timestamp string, time_after *time.Time) bool {
