@@ -23,6 +23,7 @@ func main() {
 	hide_sql_flag  := flag.Bool("hide_sql", false, "Hide SQL statements")
 	hide_ntlm_flag := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
 	full_flag      := flag.Bool("full", false, "Show the full request/job for each found line")
+	neat_flag      := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
 	after_str      := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
 	find_str       := flag.String("find", "", "Find lines matching this regexp")
 
@@ -49,6 +50,12 @@ func main() {
 	if len(args) < 1 {
 		usage()
 		os.Exit(2)
+	}
+
+	if *neat_flag {
+		*hide_jobs_flag = true
+		*hide_sql_flag = true
+		*hide_ntlm_flag = true
 	}
 
 	fmt.Println(fmt.Sprintf("Show full requests/jobs: %t", *full_flag))
@@ -204,7 +211,8 @@ func main() {
 }
 
 func usage() {
-	fmt.Println("Example: avm -find=\"username|computername\" \"/path/to/manager/log/production.log\"")
+	fmt.Println("This tool can be used to extract the logs for specific requests from an AppVolumes Manager log")
+	fmt.Println("Example:avmlog -after=\"2015-10-19 09:00:00\" -find \"apvuser2599\" -full -neat ~/Documents/scale.log.gz")
 
 	flag.PrintDefaults()
 }
