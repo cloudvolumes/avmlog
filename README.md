@@ -32,37 +32,56 @@ Set operating flags and provide a AppVolumes Manager log file. Use gzipped files
 
 avmlog [flags] [filename]
 
-For example:
-avmlog -match="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log"
+Find the full requests containing "apvuser2599" without background jobs, SQL, or NTLM lines:
+avmlog -find "apvuser2599" -full -neat ~/Documents/scale.log.gz
 
-With a gzipped file:
-avmlog -match="apvuser03734|av-pd1-pl8-0787" -after="2015-10-01 01:11:32" "/users/slawson/Documents/scale.log.gz"
+Find lines containing "apvuser2599" after "2015-10-01 01:11:32" without SQL lines in a gzipped log file :
+avmlog -find="apvuser03734" -after="2015-10-01 01:11:32" -hide_sql "/users/slawson/Documents/scale.log.gz"
+
+Find lines containing a computer or user name:
+avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log.gz"
 
 
 ### Flags:
 
-#### -match="regexp"
+#### -find="regexp"
 
-The regular expression used to locate target lines during the first pass.
+The regular expression used to locate target lines.
+If this is not provided, all lines will be printed unless excluded by other flags.
+
+#### -full
+
+When a matching line is found, extract the request identifier from it (PxxxxxRxxxx),
+and print all the lines in that request.
+
+#### -neat
+
+A shortcut for -hide_jobs, -hide_sql, and -hide_html.
 
 #### -after="YYYY-MM-DD HH:II:SS"
 
 Only include log lines from requests that occurred after this time.
-This could be used to split large files
-avmlog -after="2015-10-20 06:24:12" -sql=1 "/users/slawson/Documents/scale.log" > scale_after_6-24pm.log
+This could be used to split large files like:
+avmlog -after="2015-10-20 06:24:12" "/users/slawson/Documents/scale.log" > scale_after_6-24pm.log
 
-#### -jobs=0|1
+#### -hide_jobs
 
-Controls whether or not background jobs are shown. 
-The default is 0 because until the most recent development builds, 
-all background jobs shared the same request identifier (PxxxxxDJ) so most of the output is not related.
+Hide log lines from background jobs.
 
-In Manager builds (from master branch) created after October 21st, 
+Until the most recent development builds all background jobs shared the same request identifier (PxxxxxDJ).
+This is important to use with logs from those builds when using -full, 
+otherwise lines from almost every job will be printed.
+
+In Manager builds (in master branch) created after October 21st, 
 each background job has a unique request identifier (PxxxxDJxxx) so only relevant jobs can be shown. 
 
-#### -sql=0/1
+#### -hide_sql
 
-This controls whether or not SQL statements are shown. The default is 0 which strips them out.
+Hide log lines containing SQL statements.
+
+#### -hide_ntlm
+
+Hide log lines containing NTLM logs.
 
 
 ## TODO
@@ -70,15 +89,14 @@ This controls whether or not SQL statements are shown. The default is 0 which st
 Things someone can do to improve this:
 
 - Allow processing of multiple files (to account for load balanced Managers)
-- Add ability to provide a custom exclusion regexp
-- Add ability to specify user and computer directly instead of in a regexp
-- Add ability to remove DEBUG lines
+- Add ability to provide a custom exclusion regexp (name this flag -hide)
+- Add ability to specify user and computer directly instead of a -find=regexp
+- Add ability to remove DEBUG lines (name this flag -hide_debug)
 - Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
 - Write separate output files for each request identifier
 - Show the first line of each request
-- Allow filtering of non-200 requests
+- Allow filtering of non-200 requests (maybe hide 
 - Add a context flag to pull back the X lines above/below a match
-- Add flag to only show matches, instead of the full request
 - Add flag to group requests so all their lines are together
 - Add a flag to covert timestamps from UTC
 - Add short-versions of the flags like -m/-a/-j etc
