@@ -30,16 +30,16 @@ These are available under the release section on github: https://github.com/clou
 
 Set operating flags and provide a AppVolumes Manager log file. Use gzipped files to save space.
 
-avmlog [flags] [filename]
+`avmlog [flags] [filename]`
 
 Find the full requests containing "apvuser2599" without background jobs, SQL, or NTLM lines:
-avmlog -find "apvuser2599" -full -neat ~/Documents/scale.log.gz
+`avmlog -find "apvuser2599" -full -neat ~/Documents/scale.log.gz`
 
 Find lines containing "apvuser2599" after "2015-10-01 01:11:32" without SQL lines in a gzipped log file :
-avmlog -find="apvuser03734" -after="2015-10-01 01:11:32" -hide_sql "/users/slawson/Documents/scale.log.gz"
+`avmlog -find="apvuser03734" -after="2015-10-01 01:11:32" -hide_sql "/users/slawson/Documents/scale.log.gz"`
 
 Find lines containing a computer or user name:
-avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log.gz"
+`avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log.gz"`
 
 
 ### Flags:
@@ -62,7 +62,7 @@ A shortcut for -hide_jobs, -hide_sql, and -hide_html.
 
 Only include log lines from requests that occurred after this time.
 This could be used to split large files like:
-avmlog -after="2015-10-20 06:24:12" "/users/slawson/Documents/scale.log" > scale_after_6-24pm.log
+`avmlog -after="2015-10-20 06:24:12" "/users/slawson/Documents/scale.log" > scale_after_6-24pm.log`
 
 #### -hide_jobs
 
@@ -89,18 +89,19 @@ Hide log lines containing NTLM logs.
 Things someone can do to improve this:
 
 - Allow processing of multiple files (to account for load balanced Managers)
-- Add ability to provide a custom exclusion regexp (name this flag -hide)
+- Add ability to provide a custom exclusion regexp (name this flag -hide="regexp")
 - Add ability to specify user and computer directly instead of a -find=regexp
 - Add ability to remove DEBUG lines (name this flag -hide_debug)
 - Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
 - Write separate output files for each request identifier
 - Show the first line of each request
-- Allow filtering of non-200 requests (maybe hide 
+- Allow filtering of non-200 requests (maybe hide successful requests so errors are easier to find) 
 - Add a context flag to pull back the X lines above/below a match
 - Add flag to group requests so all their lines are together
 - Add a flag to covert timestamps from UTC
 - Add short-versions of the flags like -m/-a/-j etc
 - Figure out how to use FlagSet: https://golang.org/pkg/flag/
+- Improve progress bar
 
 
 ## Developer notes
