@@ -212,9 +212,11 @@ func main() {
 
 func usage() {
 	fmt.Println("This tool can be used to extract the logs for specific requests from an AppVolumes Manager log")
+	fmt.Println("")
 	fmt.Println("Example:avmlog -after=\"2015-10-19 09:00:00\" -find \"apvuser2599\" -full -neat ~/Documents/scale.log.gz")
-
+	fmt.Println("")
 	flag.PrintDefaults()
+	fmt.Println("")
 }
 
 func isAfterTime(timestamp string, time_after *time.Time) bool {
