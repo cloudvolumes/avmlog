@@ -187,7 +187,7 @@ func main() {
 			if *sql_flag < 1 && sql_regexp.MatchString(line) {
 				output = false
 			} else if !*ntlm_flag && ntlm_regexp.MatchString(line) {
-				//output = false
+				output = false
 			}
 		}
 
