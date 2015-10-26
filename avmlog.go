@@ -24,7 +24,7 @@ func main() {
 	sql_flag := flag.Bool("sql", false, "Show SQL statements")
 	ntlm_flag := flag.Bool("ntlm", false, "Show NTLM lines")
 	after_str := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
-	match_str := flag.String("match", "", "Regexp for requests to gather")
+	find_str := flag.String("find", "", "Find lines matching this regexp")
 
 	flag.Parse()
 	args := flag.Args()
@@ -76,7 +76,7 @@ func main() {
 
 	var unique_map map[string]bool;
 
-	line_strexp := *match_str
+	line_strexp := *find_str
 
 	if line_regexp, err := regexp.Compile(line_strexp); len(line_strexp) > 0 && err == nil {
 		line_count  := 0
@@ -204,7 +204,7 @@ func main() {
 
 func usage() {
 	flag.PrintDefaults()
-	fmt.Println("Example: avm -match=\"username|computername\" \"/path/to/manager/log/production.log\"")
+	fmt.Println("Example: avm -find=\"username|computername\" \"/path/to/manager/log/production.log\"")
 }
 
 func isAfterTime(timestamp string, time_after *time.Time) bool {
