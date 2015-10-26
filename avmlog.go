@@ -20,6 +20,7 @@ var request_regexp   *regexp.Regexp = regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[
 
 func main() {
 	job_flag := flag.Int("jobs", 0, "Show background jobs")
+	job_lines_flag := flag.Bool("job_lines", false, "Show matching lines from background jobs")
 	sql_flag := flag.Int("sql", 0, "Show SQL statements")
 	ntlm_flag := flag.Bool("ntlm", false, "Show NTLM lines")
 	after_str := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
@@ -50,6 +51,7 @@ func main() {
 	}
 
 	fmt.Println(fmt.Sprintf("Show background jobs: %d", *job_flag))
+	fmt.Println(fmt.Sprintf("Show lines from background jobs: %b", *job_lines_flag))
 	fmt.Println(fmt.Sprintf("Show SQL: %d", *sql_flag))
 	fmt.Println(fmt.Sprintf("After: %s", *after_str))
 
@@ -96,10 +98,8 @@ func main() {
 
 				if line_after {
 					if request_id := extractRequestId(line); len(request_id) > 1 {
-						request_ids = append(request_ids, request_id)
-
-						if !isJob(request_id) || *job_flag > 0 {
-							//
+						if *job_flag > 0 || *job_lines_flag || !isJob(request_id) {
+							request_ids = append(request_ids, request_id)
 						}
 					}
 				}
@@ -168,10 +168,12 @@ func main() {
 
 			if has_requests {
 				if len(request_id) > 0 && unique_map[request_id] {
-					if isJob(request_id) && *job_flag < 1 {
-						// if this is a job and jobs are hidden,
-						// only print the line if it contains the original regexp
-						output = has_matcher && line_regexp.MatchString(line)
+					if *job_flag < 1 && isJob(request_id) {
+            if *job_lines_flag {
+							// if this is a job and jobs are hidden,
+							// only print the line if job_lines is true and the line contains the original regexp
+							output = has_matcher && line_regexp.MatchString(line)
+						}
 					} else {
 						output = true
 					}
