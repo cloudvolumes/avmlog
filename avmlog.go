@@ -51,10 +51,11 @@ func main() {
 		os.Exit(2)
 	}
 
-	fmt.Println(fmt.Sprintf("Hide background job lines: %t", *hide_jobs_flag))
-	fmt.Println(fmt.Sprintf("Hide SQL lines: %t", *hide_sql_flag))
-	fmt.Println(fmt.Sprintf("Hide NTLM lines: %t", *hide_sql_flag))
-	fmt.Println(fmt.Sprintf("After: %s", *after_str))
+	fmt.Println(fmt.Sprintf("Show full requests/jobs: %t", *full_flag))
+	fmt.Println(fmt.Sprintf("Show background job lines: %t", !*hide_jobs_flag))
+	fmt.Println(fmt.Sprintf("Show SQL lines: %t", !*hide_sql_flag))
+	fmt.Println(fmt.Sprintf("Show NTLM lines: %t", !*hide_ntlm_flag))
+	fmt.Println(fmt.Sprintf("Show lines after: %s", *after_str))
 
 	filename := args[0]
 	fmt.Println(fmt.Sprintf("Opening file: %s", filename))
@@ -64,13 +65,6 @@ func main() {
 
 	var reader io.Reader = file
 
-	if isGzip(filename) {
-		parse_gz_reader := getGzipReader(file)
-		defer parse_gz_reader.Close()
-
-		reader = parse_gz_reader
-	}
-
 	sql_regexp := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
 	ntlm_regexp := regexp.MustCompile(" \\(NTLM\\) ")
 
@@ -79,6 +73,15 @@ func main() {
 	line_strexp := *find_str
 
 	if line_regexp, err := regexp.Compile(line_strexp); *full_flag && len(line_strexp) > 0 && err == nil {
+		if isGzip(filename) {
+			// for some reason if you create a reader but don't use it,
+			// an error is given when the output reader is created below
+			parse_gz_reader := getGzipReader(file)
+			defer parse_gz_reader.Close()
+
+			reader = parse_gz_reader
+		}
+
 		line_count  := 0
 		line_after  := !parse_time // if not parsing time, then all lines are valid
 		request_ids := make([]string, 0)
@@ -183,9 +186,9 @@ func main() {
 		}
 
 		if output {
-			if !*hide_sql_flag && sql_regexp.MatchString(line) {
+			if *hide_sql_flag && sql_regexp.MatchString(line) {
 				output = false
-			} else if !*hide_ntlm_flag && ntlm_regexp.MatchString(line) {
+			} else if *hide_ntlm_flag && ntlm_regexp.MatchString(line) {
 				output = false
 			}
 		}
