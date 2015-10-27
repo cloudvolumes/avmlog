@@ -39,7 +39,7 @@ func main() {
 
 	if e != nil {
 		if len(*after_str) > 0 {
-			fmt.Println(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *after_str))
+			msg(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *after_str))
 			usage()
 			os.Exit(2)
 		}
@@ -58,14 +58,14 @@ func main() {
 		*hide_ntlm_flag = true
 	}
 
-	fmt.Println(fmt.Sprintf("Show full requests/jobs: %t", *full_flag))
-	fmt.Println(fmt.Sprintf("Show background job lines: %t", !*hide_jobs_flag))
-	fmt.Println(fmt.Sprintf("Show SQL lines: %t", !*hide_sql_flag))
-	fmt.Println(fmt.Sprintf("Show NTLM lines: %t", !*hide_ntlm_flag))
-	fmt.Println(fmt.Sprintf("Show lines after: %s", *after_str))
+	msg(fmt.Sprintf("Show full requests/jobs: %t", *full_flag))
+	msg(fmt.Sprintf("Show background job lines: %t", !*hide_jobs_flag))
+	msg(fmt.Sprintf("Show SQL lines: %t", !*hide_sql_flag))
+	msg(fmt.Sprintf("Show NTLM lines: %t", !*hide_ntlm_flag))
+	msg(fmt.Sprintf("Show lines after: %s", *after_str))
 
 	filename := args[0]
-	fmt.Println(fmt.Sprintf("Opening file: %s", filename))
+	msg(fmt.Sprintf("Opening file: %s", filename))
 
 	file := openFile(filename)
 	defer file.Close()
@@ -117,27 +117,27 @@ func main() {
 			}
 
 			if line_count++; line_count % 10000 == 0 {
-				fmt.Print(fmt.Sprintf("Reading: %d\r", line_count))
+				fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %d\r", line_count))
 			}
 		}
 
-		fmt.Println("") // empty line
+		msg("") // empty line
 
 		if err := scanner.Err(); err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println(fmt.Sprintf("Found %d lines matching \"%s\"", len(request_ids), line_strexp))
+		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(request_ids), line_strexp))
 		unique_map = generateRequestIdMap(&request_ids)
 
 		if len(unique_map) < 1 {
-			fmt.Println(fmt.Sprintf("Found 0 request identifiers", line_strexp))
+			msg(fmt.Sprintf("Found 0 request identifiers", line_strexp))
 			os.Exit(2)
 		}
 
 		rewindFile(file)
 	} else {
-		fmt.Println("No matchers provided, skipping match phase")
+		msg("Not printing -full requests, skipping request collection phase")
 	}
 
 	if isGzip(filename) {
@@ -163,12 +163,12 @@ func main() {
 
 		if !line_after {
 			if line_count++; line_count % 10000 == 0 {
-				fmt.Print(fmt.Sprintf("Reading: %d\r", line_count))
+				fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %d\r", line_count))
 			}
 
 			if timestamp := extractTimestamp(line); len(timestamp) > 1 {
 				if isAfterTime(timestamp, &time_after) {
-					fmt.Println("\n") // empty line
+					msg("\n") // empty line
 					line_after = true
 				}
 			}
@@ -211,17 +211,17 @@ func main() {
 }
 
 func usage() {
-	fmt.Println("This tool can be used to extract the logs for specific requests from an AppVolumes Manager log")
-	fmt.Println("")
-	fmt.Println("Example:avmlog -after=\"2015-10-19 09:00:00\" -find \"apvuser2599\" -full -neat ~/Documents/scale.log.gz")
-	fmt.Println("")
+	msg("This tool can be used to extract the logs for specific requests from an AppVolumes Manager log")
+	msg("")
+	msg("Example:avmlog -after=\"2015-10-19 09:00:00\" -find \"apvuser2599\" -full -neat ~/Documents/scale.log.gz")
+	msg("")
 	flag.PrintDefaults()
-	fmt.Println("")
+	msg("")
 }
 
 func isAfterTime(timestamp string, time_after *time.Time) bool {
 	if line_time, e := time.Parse(TIME_LAYOUT, timestamp); e != nil {
-		fmt.Println("Got error %s", e)
+		msg(fmt.Sprintf("Got error %s", e))
 		return false
 	} else if line_time.Before(*time_after) {
 		return false
@@ -258,7 +258,7 @@ func generateRequestIdMap(request_ids *[]string) map[string]bool {
 	}
 
 	for k, _ := range unique_map {
-		fmt.Println(fmt.Sprintf("Request ID: %s", k))
+		msg(fmt.Sprintf("Request ID: %s", k))
 	}
 
 	return unique_map
@@ -287,4 +287,8 @@ func getGzipReader(file *os.File) *gzip.Reader {
 
 func rewindFile(file *os.File) {
 	file.Seek(0, 0)  // go back to the top (rewind)
+}
+
+func msg(output string) {
+	fmt.Fprintln(os.Stderr, output)
 }
