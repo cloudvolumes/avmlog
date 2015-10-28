@@ -178,9 +178,9 @@ func main() {
 
 			if line_count++; line_count % 5000 == 0 {
 				if show_percent {
-					fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %.2f%%\r", (float64(read_size) / file_size) * 100))
+					fmt.Fprintf(os.Stderr, "Reading: %.2f%%\r", (float64(read_size) / file_size) * 100)
 				} else {
-					fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %d lines, %0.3f GB\r", line_count, float64(read_size)/1024/1024/1024))
+					fmt.Fprintf(os.Stderr, "Reading: %d lines, %0.3f GB\r", line_count, float64(read_size)/1024/1024/1024)
 				}
 			}
 
