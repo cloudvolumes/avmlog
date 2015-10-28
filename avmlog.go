@@ -70,6 +70,11 @@ func main() {
 	file := openFile(filename)
 	defer file.Close()
 
+	is_gzip      := isGzip(filename)
+	file_size    := float64(fileSize(file))
+	show_percent := !is_gzip
+	var read_size int64 = 0
+
 	var reader io.Reader = file
 
 	sql_regexp := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
@@ -80,7 +85,7 @@ func main() {
 	line_strexp := *find_str
 
 	if line_regexp, err := regexp.Compile(line_strexp); *full_flag && len(line_strexp) > 0 && err == nil {
-		if isGzip(filename) {
+		if is_gzip {
 			// for some reason if you create a reader but don't use it,
 			// an error is given when the output reader is created below
 			parse_gz_reader := getGzipReader(file)
@@ -116,11 +121,18 @@ func main() {
 				}
 			}
 
-			if line_count++; line_count % 10000 == 0 {
-				fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %d\r", line_count))
+			read_size += int64(len(line))
+
+			if line_count++; line_count % 20000 == 0 {
+				if show_percent {
+					fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %.2f%%\r", (float64(read_size) / file_size) * 100))
+				} else {
+					fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %d lines, %0.3f GB\r", line_count, float64(read_size)/1024/1024/1024))
+				}
 			}
 		}
 
+		file_size = float64(read_size) // set the filesize to the total known size
 		msg("") // empty line
 
 		if err := scanner.Err(); err != nil {
@@ -131,7 +143,7 @@ func main() {
 		unique_map = generateRequestIdMap(&request_ids)
 
 		if len(unique_map) < 1 {
-			msg(fmt.Sprintf("Found 0 request identifiers", line_strexp))
+			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", line_strexp))
 			os.Exit(2)
 		}
 
@@ -140,12 +152,15 @@ func main() {
 		msg("Not printing -full requests, skipping request collection phase")
 	}
 
-	if isGzip(filename) {
+	if is_gzip {
 		output_gz_reader := getGzipReader(file)
 		defer output_gz_reader.Close()
 
 		reader = output_gz_reader
 	}
+
+	show_percent = read_size > int64(0)
+	read_size = 0
 
 	line_count := 0
 	line_after := !parse_time // if not parsing time, then all lines are valid
@@ -162,8 +177,14 @@ func main() {
 		output := false
 
 		if !line_after {
-			if line_count++; line_count % 10000 == 0 {
-				fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %d\r", line_count))
+			read_size += int64(len(line))
+
+			if line_count++; line_count % 5000 == 0 {
+				if show_percent {
+					fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %.2f%%\r", (float64(read_size) / file_size) * 100))
+				} else {
+					fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %d lines, %0.3f GB\r", line_count, float64(read_size)/1024/1024/1024))
+				}
 			}
 
 			if timestamp := extractTimestamp(line); len(timestamp) > 1 {
@@ -270,6 +291,18 @@ func openFile(filename string) *os.File {
 		log.Fatal(err)
 	}
 	return file
+}
+
+func fileSize(file *os.File) int64 {
+	if fi, err := file.Stat(); err != nil {
+		msg("Unable to determine file size")
+
+		return 1;
+	} else {
+		msg(fmt.Sprintf("The file is %d bytes long", fi.Size()))
+
+		return fi.Size();
+	}
 }
 
 func isGzip(filename string) bool {
