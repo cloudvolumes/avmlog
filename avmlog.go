@@ -125,9 +125,9 @@ func main() {
 
 			if line_count++; line_count % 20000 == 0 {
 				if show_percent {
-					fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %.2f%%\r", (float64(read_size) / file_size) * 100))
+					showPercent(line_count, float64(read_size) / file_size, line_after, len(request_ids))
 				} else {
-					fmt.Fprint(os.Stderr, fmt.Sprintf("Reading: %d lines, %0.3f GB\r", line_count, float64(read_size)/1024/1024/1024))
+					showBytes(line_count, float64(read_size), line_after, len(request_ids))
 				}
 			}
 		}
@@ -324,4 +324,24 @@ func rewindFile(file *os.File) {
 
 func msg(output string) {
 	fmt.Fprintln(os.Stderr, output)
+}
+
+func showPercent(line_count int, position float64, after bool, matches int) {
+	fmt.Fprintf(
+		os.Stderr,
+		"Reading: %d lines, %.2f%% (after: %v, matches: %d)\r",
+		line_count,
+		position * 100,
+		after,
+		matches)
+}
+
+func showBytes(line_count int, position float64, after bool, matches int) {
+	fmt.Fprintf(
+		os.Stderr,
+		"Reading: %d lines, %0.3f GB (after: %v, matches: %d)\r",
+		line_count,
+		position / 1024 / 1024 / 1024,
+		after,
+		matches)
 }
