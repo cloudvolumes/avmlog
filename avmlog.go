@@ -173,6 +173,7 @@ func main() {
 	line_count := 0
 	line_after := !parse_time // if not parsing time, then all lines are valid
 	has_requests := len(unique_map) > 0
+	in_request := false
 
 	output_scanner := bufio.NewScanner(reader);
 
@@ -206,12 +207,20 @@ func main() {
 			request_id := extractRequestId(line)
 
 			if has_requests {
-				if len(request_id) > 0 && unique_map[request_id] {
-					if *hide_jobs_flag && isJob(request_id) {
-						output = false
+				if len(request_id) > 0 {
+					if unique_map[request_id] {
+						if *hide_jobs_flag && isJob(request_id) {
+							output = false
+						} else {
+							in_request = true
+							output = true
+						}
 					} else {
-						output = true
+						in_request = false
 					}
+
+				} else if len(request_id) < 1 && in_request {
+					output = true
 				}
 			} else if has_find {
 				output = find_regexp.MatchString(line)
