@@ -22,15 +22,17 @@ var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ U
 var request_regexp   *regexp.Regexp = regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
 var sql_regexp       *regexp.Regexp = regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
 var ntlm_regexp      *regexp.Regexp = regexp.MustCompile(" \\(NTLM\\) ")
+var debug_regexp     *regexp.Regexp = regexp.MustCompile(" DEBUG ")
 
 func main() {
-	hide_jobs_flag := flag.Bool("hide_jobs", false, "Hide background jobs")
-	hide_sql_flag  := flag.Bool("hide_sql", false, "Hide SQL statements")
-	hide_ntlm_flag := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
-	full_flag      := flag.Bool("full", false, "Show the full request/job for each found line")
-	neat_flag      := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
-	after_str      := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
-	find_str       := flag.String("find", "", "Find lines matching this regexp")
+	hide_jobs_flag  := flag.Bool("hide_jobs", false, "Hide background jobs")
+	hide_sql_flag   := flag.Bool("hide_sql", false, "Hide SQL statements")
+	hide_ntlm_flag  := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
+	hide_debug_flag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
+	full_flag       := flag.Bool("full", false, "Show the full request/job for each found line")
+	neat_flag       := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
+	after_str       := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
+	find_str        := flag.String("find", "", "Find lines matching this regexp")
 
 	flag.Parse()
 	args := flag.Args()
@@ -63,6 +65,7 @@ func main() {
 	msg(fmt.Sprintf("Show background job lines: %t", !*hide_jobs_flag))
 	msg(fmt.Sprintf("Show SQL lines: %t", !*hide_sql_flag))
 	msg(fmt.Sprintf("Show NTLM lines: %t", !*hide_ntlm_flag))
+	msg(fmt.Sprintf("Show DEBUG lines: %t", !*hide_debug_flag))
 	msg(fmt.Sprintf("Show lines after: %s", *after_str))
 
 	filename := args[0]
@@ -214,6 +217,8 @@ func main() {
 			if *hide_sql_flag && sql_regexp.MatchString(line) {
 				output = false
 			} else if *hide_ntlm_flag && ntlm_regexp.MatchString(line) {
+				output = false
+			} else if *hide_debug_flag && debug_regexp.MatchString(line) {
 				output = false
 			}
 		}

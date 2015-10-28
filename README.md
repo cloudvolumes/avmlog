@@ -83,6 +83,10 @@ Hide log lines containing SQL statements.
 
 Hide log lines containing NTLM logs.
 
+#### -hide_debug
+
+Hide log lines containing DEBUG logs.
+
 
 ## TODO
 
@@ -91,7 +95,6 @@ Things someone can do to improve this:
 - Allow processing of multiple files (to account for load balanced Managers)
 - Add ability to provide a custom exclusion regexp (name this flag -hide="regexp")
 - Add ability to specify user and computer directly instead of a -find=regexp
-- Add ability to remove DEBUG lines (name this flag -hide_debug)
 - Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
 - Write separate output files for each request identifier
 - Show the first line of each request
