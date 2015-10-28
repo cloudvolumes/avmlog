@@ -16,6 +16,7 @@ import (
 // Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
 // convey the pattern with which to format/parse a given time/string
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
+const VERSION = "v2.1 - Bizarro"
 
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
@@ -234,6 +235,7 @@ func main() {
 }
 
 func usage() {
+	msg("AppVolumes Manager Log Tool - " + VERSION)
 	msg("This tool can be used to extract the logs for specific requests from an AppVolumes Manager log")
 	msg("")
 	msg("Example:avmlog -after=\"2015-10-19 09:00:00\" -find \"apvuser2599\" -full -neat ~/Documents/scale.log.gz")
