@@ -34,6 +34,7 @@ func main() {
 	neat_flag       := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
 	after_str       := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
 	find_str        := flag.String("find", "", "Find lines matching this regexp")
+	hide_str        := flag.String("hide", "", "Hide lines matching this regexp")
 
 	flag.Parse()
 	args := flag.Args()
@@ -83,9 +84,13 @@ func main() {
 	var reader io.Reader = file
 	var unique_map map[string]bool;
 
-	line_strexp := *find_str
+	find_regexp, err := regexp.Compile(*find_str)
+	has_find := len(*find_str) > 0 && err == nil
 
-	if line_regexp, err := regexp.Compile(line_strexp); *full_flag && len(line_strexp) > 0 && err == nil {
+	hide_regexp, err := regexp.Compile(*hide_str)
+	has_hide := len(*hide_str) > 0 && err == nil
+
+	if *full_flag && has_find {
 		if is_gzip {
 			// for some reason if you create a reader but don't use it,
 			// an error is given when the output reader is created below
@@ -103,7 +108,7 @@ func main() {
 
 		for scanner.Scan() {
 			line := scanner.Text();
-			if line_regexp.MatchString(line) {
+			if find_regexp.MatchString(line) {
 
 				if !line_after {
 					if timestamp := extractTimestamp(line); len(timestamp) > 1 {
@@ -140,11 +145,11 @@ func main() {
 			log.Fatal(err)
 		}
 
-		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(request_ids), line_strexp))
+		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(request_ids), *find_str))
 		unique_map = generateRequestIdMap(&request_ids)
 
 		if len(unique_map) < 1 {
-			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", line_strexp))
+			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", *find_str))
 			os.Exit(2)
 		}
 
@@ -166,9 +171,6 @@ func main() {
 	line_count := 0
 	line_after := !parse_time // if not parsing time, then all lines are valid
 	has_requests := len(unique_map) > 0
-
-	line_regexp, err := regexp.Compile(line_strexp);
-	has_matcher      := len(line_strexp) > 0 && err == nil
 
 	output_scanner := bufio.NewScanner(reader);
 
@@ -207,8 +209,8 @@ func main() {
 						output = true
 					}
 				}
-			} else if has_matcher {
-				output = line_regexp.MatchString(line)
+			} else if has_find {
+				output = find_regexp.MatchString(line)
 			} else {
 				output = true
 			}
@@ -220,6 +222,8 @@ func main() {
 			} else if *hide_ntlm_flag && ntlm_regexp.MatchString(line) {
 				output = false
 			} else if *hide_debug_flag && debug_regexp.MatchString(line) {
+				output = false
+			} else if has_hide && hide_regexp.MatchString(line) {
 				output = false
 			}
 		}

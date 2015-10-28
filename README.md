@@ -49,6 +49,12 @@ Find lines containing a computer or user name:
 The regular expression used to locate target lines.
 If this is not provided, all lines will be printed unless excluded by other flags.
 
+#### -hide="regexp"
+
+The regular expression used to exclude lines.
+This works only on the output phase.
+It will not exclude an entire request from being included if a -find="xxx" -full was used.
+
 #### -full
 
 When a matching line is found, extract the request identifier from it (PxxxxxRxxxx),
@@ -93,8 +99,8 @@ Hide log lines containing DEBUG logs.
 Things someone can do to improve this:
 
 - Allow processing of multiple files (to account for load balanced Managers)
-- Add ability to provide a custom exclusion regexp (name this flag -hide="regexp")
 - Add ability to specify user and computer directly instead of a -find=regexp
+- Add ability to hide entire requests if a -hide="regexp" matches a line in that request (call it -hide_full)
 - Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
 - Write separate output files for each request identifier
 - Show the first line of each request
