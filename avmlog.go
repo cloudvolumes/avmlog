@@ -13,10 +13,15 @@ import (
 	"compress/gzip"
 )
 
+// Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
+// convey the pattern with which to format/parse a given time/string
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
+
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 var request_regexp   *regexp.Regexp = regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
+var sql_regexp       *regexp.Regexp = regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
+var ntlm_regexp      *regexp.Regexp = regexp.MustCompile(" \\(NTLM\\) ")
 
 func main() {
 	hide_jobs_flag := flag.Bool("hide_jobs", false, "Hide background jobs")
@@ -29,10 +34,6 @@ func main() {
 
 	flag.Parse()
 	args := flag.Args()
-
-	// Time layouts must use the
-	// reference time `Mon Jan 2 15:04:05 MST 2006` to show the
-	// pattern with which to format/parse a given time/string
 
 	time_after, e    := time.Parse(TIME_LAYOUT, fmt.Sprintf("[%s UTC]", *after_str))
 	parse_time       := false
@@ -76,10 +77,6 @@ func main() {
 	var read_size int64 = 0
 
 	var reader io.Reader = file
-
-	sql_regexp := regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
-	ntlm_regexp := regexp.MustCompile(" \\(NTLM\\) ")
-
 	var unique_map map[string]bool;
 
 	line_strexp := *find_str
