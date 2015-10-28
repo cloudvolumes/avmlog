@@ -101,16 +101,18 @@ Things someone can do to improve this:
 - Allow processing of multiple files (to account for load balanced Managers)
 - Add ability to specify user and computer directly instead of a -find=regexp
 - Add ability to hide entire requests if a -hide="regexp" matches a line in that request (call it -hide_full)
+- Add ability to extract multiple files from .zip files
+- Add ability to group requests so all their lines are together
+- Add ability to covert timestamps from UTC
+- Add ability to pull back the X lines of context above and below a match
+- Add ability to hide successful requests (so error are easier to find)
 - Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
 - Write separate output files for each request identifier
-- Show the first line of each request
-- Allow filtering of non-200 requests (maybe hide successful requests so errors are easier to find) 
-- Add a context flag to pull back the X lines above/below a match
-- Add flag to group requests so all their lines are together
-- Add a flag to covert timestamps from UTC
+- Show the first line of each request 
 - Add short-versions of the flags like -m/-a/-j etc
 - Figure out how to use FlagSet: https://golang.org/pkg/flag/
 - Improve progress bar
+
 
 
 ## Developer notes
