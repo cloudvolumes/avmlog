@@ -39,10 +39,11 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
-	time_after, e    := time.Parse(TIME_LAYOUT, fmt.Sprintf("[%s UTC]", *after_str))
-	parse_time       := false
+	time_after, err := time.Parse(TIME_LAYOUT, fmt.Sprintf("[%s UTC]", *after_str))
+	parse_time      := false
+	after_count     := 0
 
-	if e != nil {
+	if err != nil {
 		if len(*after_str) > 0 {
 			msg(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *after_str))
 			usage()
@@ -114,6 +115,7 @@ func main() {
 					if timestamp := extractTimestamp(line); len(timestamp) > 1 {
 						if isAfterTime(timestamp, &time_after) {
 							line_after = true
+							after_count = line_count
 						}
 					}
 				}
@@ -190,10 +192,12 @@ func main() {
 				}
 			}
 
-			if timestamp := extractTimestamp(line); len(timestamp) > 1 {
-				if isAfterTime(timestamp, &time_after) {
-					msg("\n") // empty line
-					line_after = true
+			if after_count < line_count {
+				if timestamp := extractTimestamp(line); len(timestamp) > 1 {
+					if isAfterTime(timestamp, &time_after) {
+						msg("\n") // empty line
+						line_after = true
+					}
 				}
 			}
 		}
