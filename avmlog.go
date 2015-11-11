@@ -20,9 +20,9 @@ const VERSION = "v3.0 - Carnage"
 
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
-var request_regexp   *regexp.Regexp = regexp.MustCompile("\\] (P[0-9]+[A-Za-z]+[0-9]+) ")
-var sql_regexp       *regexp.Regexp = regexp.MustCompile("(SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
-var ntlm_regexp      *regexp.Regexp = regexp.MustCompile(" \\(NTLM\\) ")
+var request_regexp   *regexp.Regexp = regexp.MustCompile("\\][[:space:]]+(P[0-9]+[A-Za-z]+[0-9]+) ")
+var sql_regexp       *regexp.Regexp = regexp.MustCompile("( SQL: | SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
+var ntlm_regexp      *regexp.Regexp = regexp.MustCompile(" (\\(NTLM\\)|NTLM:) ")
 var debug_regexp     *regexp.Regexp = regexp.MustCompile(" DEBUG ")
 
 func main() {
