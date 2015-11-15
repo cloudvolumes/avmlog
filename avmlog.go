@@ -10,6 +10,7 @@ import (
 	"strings"
 	"flag"
 	"time"
+	"strconv"
 	"compress/gzip"
 )
 
@@ -25,11 +26,40 @@ var sql_regexp       *regexp.Regexp = regexp.MustCompile("( SQL: | SQL \\()|(EXE
 var ntlm_regexp      *regexp.Regexp = regexp.MustCompile(" (\\(NTLM\\)|NTLM:) ")
 var debug_regexp     *regexp.Regexp = regexp.MustCompile(" DEBUG ")
 
+var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) OK in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms\\)")
+var reconfig_regexp  *regexp.Regexp = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
+var result_regexp    *regexp.Regexp = regexp.MustCompile(" with result \\\"([a-z]+)\\\"")
+var route_regexp     *regexp.Regexp = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)\\?")
+
+type mount_report struct {
+	queue bool
+	mount_beg string
+	mount_end string
+	mount_result string
+	ms_mount float64
+}
+
+type request_report struct {
+	step int
+	time_beg string
+	time_end string
+	mounts []*mount_report
+	method string
+	route string
+	code string
+	ms_request float64
+	ms_garbage float64
+	ms_db float64
+	ms_view float64
+	percent_mount int
+}
+
 func main() {
 	hide_jobs_flag  := flag.Bool("hide_jobs", false, "Hide background jobs")
 	hide_sql_flag   := flag.Bool("hide_sql", false, "Hide SQL statements")
 	hide_ntlm_flag  := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
 	hide_debug_flag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
+	report_flag      := flag.Bool("report", false, "Collect request report")
 	full_flag       := flag.Bool("full", false, "Show the full request/job for each found line")
 	neat_flag       := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
 	after_str       := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
@@ -84,6 +114,7 @@ func main() {
 
 	var reader io.Reader = file
 	var unique_map map[string]bool;
+	var reports = map[string]*request_report{};
 
 	find_regexp, err := regexp.Compile(*find_str)
 	has_find := len(*find_str) > 0 && err == nil
@@ -91,7 +122,7 @@ func main() {
 	hide_regexp, err := regexp.Compile(*hide_str)
 	has_hide := len(*hide_str) > 0 && err == nil
 
-	if *full_flag && has_find {
+	if *report_flag || (*full_flag && has_find) {
 		if is_gzip {
 			// for some reason if you create a reader but don't use it,
 			// an error is given when the output reader is created below
@@ -122,7 +153,52 @@ func main() {
 
 				if line_after {
 					if request_id := extractRequestId(line); len(request_id) > 1 {
-						if !*hide_jobs_flag || !isJob(request_id) {
+						if *report_flag {
+							if !isJob(request_id) {
+								if timestamp := extractTimestamp(line); len(timestamp) > 1 {
+									if report, ok := reports[request_id]; ok {
+										if reconfig_match := reconfig_regexp.FindStringSubmatch(line); len(reconfig_match) > 1 {
+											if reconfig_match[1] == "execute_task" {
+												report.step++
+												report.mounts = append(report.mounts, &mount_report{mount_beg: timestamp, queue: true})
+											} else if reconfig_match[1] == "process_task" {
+												if report.step >= 0 {
+													if mount := report.mounts[report.step]; mount != nil {
+														if mount.queue {
+															mount.mount_end = timestamp;
+															if result_match := result_regexp.FindStringSubmatch(line); len(result_match) > 1 {
+																mount.mount_result = result_match[1]
+															}
+															mount_beg_time, _ := time.Parse(TIME_LAYOUT, mount.mount_beg)
+															mount_end_time, _ := time.Parse(TIME_LAYOUT, mount.mount_end)
+															mount.ms_mount = mount_end_time.Sub(mount_beg_time).Seconds() * 1000
+														} else {
+															msg("We got a process task with no execute task")
+														}
+													}
+												}
+											}
+										} else if complete_match := complete_regexp.FindStringSubmatch(line); len(complete_match) > 1 {
+											report.time_end = timestamp;
+											report.code     = complete_match[1];
+
+											report.ms_request, _ = strconv.ParseFloat(complete_match[2], 64);
+											report.ms_view, _    = strconv.ParseFloat(complete_match[3], 64);
+											report.ms_db, _      = strconv.ParseFloat(complete_match[4], 64);
+										}
+									} else {
+										report := &request_report{step: -1, time_beg: timestamp}
+
+										if route_match := route_regexp.FindStringSubmatch(line); len(route_match) > 1 {
+											report.method = route_match[1]
+											report.route = route_match[2]
+										}
+
+										reports[request_id] = report
+									}
+								}
+							}
+						} else if !*hide_jobs_flag || !isJob(request_id) {
 							request_ids = append(request_ids, request_id)
 						}
 					}
@@ -145,6 +221,35 @@ func main() {
 
 		if err := scanner.Err(); err != nil {
 			log.Fatal(err)
+		}
+
+		if len(reports) > 0 {
+			fmt.Println("RequestID, Method, URL, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Mount Start, Mount end")
+
+			for k, v := range reports {
+				if len(v.time_end) > 0 && len(v.mounts) > 0 {
+					var ms_mount float64;
+
+					for _, mount := range v.mounts {
+						ms_mount += mount.ms_mount;
+					}
+
+					fmt.Println(fmt.Sprintf(
+						"%s, %s, /%s, %s, %s, %.2f, %.2f, %.2f, %.2f, %.2f%%, %d",
+						k,
+						v.method,
+						v.route,
+						v.time_beg,
+						v.time_end,
+						v.ms_request,
+						v.ms_db,
+						v.ms_view,
+						ms_mount,
+						(ms_mount/v.ms_request) * 100,
+						len(v.mounts)))
+				}
+			}
+			return;
 		}
 
 		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(request_ids), *find_str))
@@ -366,3 +471,17 @@ func showBytes(line_count int, position float64, after bool, matches int) {
 		after,
 		matches)
 }
+
+// TODO: How to combine and re-order two (or more) log files
+// open file1
+// open file2
+// loop start
+// if file1 timestamp is blank - read file1 line, store line and it's timestamp
+// if file2 timestamp is blank - read file2 line, store line and it's timestamp
+// if file1 < file2
+// print file1
+// clear file1 timestamp
+// else
+// print file2
+// clear file2 timestamp
+//
