@@ -23,7 +23,8 @@ A second pass through the file is then performed and all log lines from those re
 These are available under the release section on github: https://github.com/cloudvolumes/avmlog/releases
 
 - Windows: avmlog.exe
-- Linux/Mac: avmlog
+- Mac: avmlog
+- Linux: avmlogx
 
 
 ## Usage
