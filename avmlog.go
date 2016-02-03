@@ -17,7 +17,7 @@ import (
 // Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
 // convey the pattern with which to format/parse a given time/string
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
-const VERSION = "v3.0.1 - Colossus"
+const VERSION = "v3.0.2 - Crystal"
 
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
@@ -59,7 +59,7 @@ func main() {
 	hide_sql_flag   := flag.Bool("hide_sql", false, "Hide SQL statements")
 	hide_ntlm_flag  := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
 	hide_debug_flag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
-	report_flag      := flag.Bool("report", false, "Collect request report")
+	report_flag     := flag.Bool("report", false, "Collect request report")
 	full_flag       := flag.Bool("full", false, "Show the full request/job for each found line")
 	neat_flag       := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
 	after_str       := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
