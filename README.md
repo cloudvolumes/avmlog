@@ -109,11 +109,13 @@ Things someone can do to improve this:
 - Add ability to hide successful requests (so error are easier to find)
 - Detect gaps in time of more than a few seconds for a single request and and print a line showing the time gap
 - Write separate output files for each request identifier
-- Show the first line of each request 
+- Show the first line and last line of each request 
 - Add short-versions of the flags like -m/-a/-j etc
 - Figure out how to use FlagSet: https://golang.org/pkg/flag/
 - Improve progress bar
-
+- Enable a file to be re-ordered based on time (good for merging 2+ logs)
+- Add the ability to put a space after a line that matches a regexp
+- Add a regexp list for common tasks
 
 
 ## Developer notes
@@ -121,10 +123,12 @@ Things someone can do to improve this:
 - Download go: https://golang.org/dl/
 - Getting started: https://golang.org/doc/install
 - Cross-platform compilation: git clone git://github.com/davecheney/golang-crosscompile.git
+- source golang-crosscompile/crosscompile.bash
 
 From: [workspace]/src/github.com/[your-account]/avmlog
 - go install
-- go-windows-386 build  (after doing: source golang-crosscompile/crosscompile.bash)
+- go-windows-386 build
+- go-linux-386 build -o avmlogx 
 
 Release names go in order alphabetically using the most liked name here:
 http://www.superherodb.com/characters/
