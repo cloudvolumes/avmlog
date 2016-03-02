@@ -34,12 +34,15 @@ Set operating flags and provide a AppVolumes Manager log file. Use gzipped files
 `avmlog [flags] [filename]`
 
 Find the full requests containing "apvuser2599" without background jobs, SQL, or NTLM lines:
+
 `avmlog -find "apvuser2599" -full -neat ~/Documents/scale.log.gz`
 
 Find lines containing "apvuser2599" after "2015-10-01 01:11:32" without SQL lines in a gzipped log file :
+
 `avmlog -find="apvuser03734" -after="2015-10-01 01:11:32" -hide_sql "/users/slawson/Documents/scale.log.gz"`
 
 Find lines containing a computer or user name:
+
 `avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log.gz"`
 
 
@@ -69,19 +72,21 @@ A shortcut for -hide_jobs, -hide_sql, and -hide_html.
 
 Only include log lines from requests that occurred after this time.
 This could be used to split large files like:
+
 `avmlog -after="2015-10-20 06:24:12" "/users/slawson/Documents/scale.log" > scale_after_6-24pm.log`
 
 #### -detect_errors
 
 This is a shortcut flag to be used instead of -find to look for lines known to contain errors.
 It is basically equivalent to -find="( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )"
+
 `avmlog -detect_errors -hide_sql "/users/slawson/Documents/scale.log"`
 
 #### -only_msg
 
 Show only the message portion of each log.
 Removes the timestamp, process identifier, and log level from each line.
-Useful for:
+
 `avmlog -detect_errors -only_msg -hide_sql "/users/slawson/Documents/scale.log" | sort | uniq -c`
 
 #### -hide_jobs
@@ -139,7 +144,7 @@ Things someone can do to improve this:
 - source golang-crosscompile/crosscompile.bash
 
 From: [workspace]/src/github.com/[your-account]/avmlog
-- go install
+- go build
 - go-windows-386 build
 - go-linux-386 build -o avmlogx 
 
