@@ -30,6 +30,8 @@ var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) OK
 var reconfig_regexp  *regexp.Regexp = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
 var result_regexp    *regexp.Regexp = regexp.MustCompile(" with result \\\"([a-z]+)\\\"")
 var route_regexp     *regexp.Regexp = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)\\?")
+var message_regexp   *regexp.Regexp = regexp.MustCompile(" P[0-9]+.*?[A-Z]+ (.*)")
+var strip_regexp     *regexp.Regexp = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0-9%!-]+)?")
 
 type mount_report struct {
 	queue bool
@@ -59,9 +61,11 @@ func main() {
 	hide_sql_flag   := flag.Bool("hide_sql", false, "Hide SQL statements")
 	hide_ntlm_flag  := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
 	hide_debug_flag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
+	only_msg_flag   := flag.Bool("only_msg", false, "Output only the message portion")
 	report_flag     := flag.Bool("report", false, "Collect request report")
 	full_flag       := flag.Bool("full", false, "Show the full request/job for each found line")
 	neat_flag       := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
+	detect_errors   := flag.Bool("detect_errors", false, "Detect lines containing known error messages")
 	after_str       := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
 	find_str        := flag.String("find", "", "Find lines matching this regexp")
 	hide_str        := flag.String("hide", "", "Hide lines matching this regexp")
@@ -115,6 +119,10 @@ func main() {
 	var reader io.Reader = file
 	var unique_map map[string]bool;
 	var reports = map[string]*request_report{};
+
+	if ( *detect_errors ) {
+		*find_str = "( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )";
+	}
 
 	find_regexp, err := regexp.Compile(*find_str)
 	has_find := len(*find_str) > 0 && err == nil
@@ -347,7 +355,13 @@ func main() {
 		}
 
 		if output {
-			fmt.Println(line)
+			if ( *only_msg_flag ) {
+				if message_match := message_regexp.FindStringSubmatch(line); len(message_match) > 1 {
+					fmt.Println(strip_regexp.ReplaceAllString(strings.TrimSpace(message_match[1]), "***"))
+				}
+			} else {
+				fmt.Println(line)
+			}
 		}
 	}
 

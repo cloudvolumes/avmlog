@@ -71,6 +71,19 @@ Only include log lines from requests that occurred after this time.
 This could be used to split large files like:
 `avmlog -after="2015-10-20 06:24:12" "/users/slawson/Documents/scale.log" > scale_after_6-24pm.log`
 
+#### -detect_errors
+
+This is a shortcut flag to be used instead of -find to look for lines known to contain errors.
+It is basically equivalent to -find="( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )"
+`avmlog -detect_errors -hide_sql "/users/slawson/Documents/scale.log"`
+
+#### -only_msg
+
+Show only the message portion of each log.
+Removes the timestamp, process identifier, and log level from each line.
+Useful for:
+`avmlog -detect_errors -only_msg -hide_sql "/users/slawson/Documents/scale.log" | sort | uniq -c`
+
 #### -hide_jobs
 
 Hide log lines from background jobs.
