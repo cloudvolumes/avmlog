@@ -17,7 +17,7 @@ import (
 // Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
 // convey the pattern with which to format/parse a given time/string
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
-const VERSION = "v3.0.2 - Crystal"
+const VERSION = "v3.1.0 - Deadpool"
 
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
