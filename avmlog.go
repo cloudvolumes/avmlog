@@ -19,6 +19,8 @@ import (
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
 const VERSION = "v3.1.0 - Deadpool"
 
+const REPORT_HEADERS = "RequestID, Method, URL, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Mount Start, Mount end";
+
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 var request_regexp   *regexp.Regexp = regexp.MustCompile("\\][[:space:]]+(P[0-9]+[A-Za-z]+[0-9]*) ")
@@ -232,7 +234,7 @@ func main() {
 		}
 
 		if len(reports) > 0 {
-			fmt.Println("RequestID, Method, URL, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Mount Start, Mount end")
+			fmt.Println(REPORT_HEADERS)
 
 			for k, v := range reports {
 				if len(v.method) > 0 && len(v.time_end) > 0 {

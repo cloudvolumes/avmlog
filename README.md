@@ -112,6 +112,12 @@ Hide log lines containing NTLM logs.
 
 Hide log lines containing DEBUG logs.
 
+#### -report
+
+Generates a comma-separated report containing one line for each request
+
+`avmlog -report "/users/slawson/Documents/scale.log"`
+
 
 ## TODO
 
