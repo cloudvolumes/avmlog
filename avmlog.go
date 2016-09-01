@@ -17,7 +17,7 @@ import (
 // Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
 // convey the pattern with which to format/parse a given time/string
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
-const VERSION = "v3.1.0 - Deadpool"
+const VERSION = "v3.2.0 - Deadshot"
 
 const REPORT_HEADERS = "RequestID, Method, URL, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Mount Start, Mount end";
 
