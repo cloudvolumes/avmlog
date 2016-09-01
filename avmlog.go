@@ -235,7 +235,7 @@ func main() {
 			fmt.Println("RequestID, Method, URL, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Mount Start, Mount end")
 
 			for k, v := range reports {
-				if len(v.time_end) > 0 && len(v.mounts) > 0 {
+				if len(v.method) > 0 && len(v.time_end) > 0 {
 					var ms_mount float64;
 
 					for _, mount := range v.mounts {
