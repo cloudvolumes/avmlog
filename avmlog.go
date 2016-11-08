@@ -19,7 +19,7 @@ import (
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
 const VERSION = "v3.2.0 - Deadshot"
 
-const REPORT_HEADERS = "RequestID, Method, URL, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Mount Start, Mount end";
+const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Mount Start, Mount end";
 
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
@@ -34,6 +34,8 @@ var result_regexp    *regexp.Regexp = regexp.MustCompile(" with result \\\"([a-z
 var route_regexp     *regexp.Regexp = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)\\?")
 var message_regexp   *regexp.Regexp = regexp.MustCompile(" P[0-9]+.*?[A-Z]+ (.*)")
 var strip_regexp     *regexp.Regexp = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0-9%!-]+)?")
+var computer_regexp  *regexp.Regexp = regexp.MustCompile("workstation=(.*?)&")
+var user_regexp      *regexp.Regexp = regexp.MustCompile("username=(.*?)&")
 
 type mount_report struct {
 	queue bool
@@ -50,6 +52,8 @@ type request_report struct {
 	mounts []*mount_report
 	method string
 	route string
+	computer string
+	user string
 	code string
 	ms_request float64
 	ms_garbage float64
@@ -204,6 +208,14 @@ func main() {
 											report.route = route_match[2]
 										}
 
+										if user_match := user_regexp.FindStringSubmatch(line); len(user_match) > 1 {
+											report.user = user_match[1]
+										}
+
+										if computer_match := computer_regexp.FindStringSubmatch(line); len(computer_match) > 1 {
+											report.computer = computer_match[1]
+										}
+
 										reports[request_id] = report
 									}
 								}
@@ -245,10 +257,13 @@ func main() {
 					}
 
 					fmt.Println(fmt.Sprintf(
-						"%s, %s, /%s, %s, %s, %.2f, %.2f, %.2f, %.2f, %.2f%%, %d",
+						"%s, %s, /%s, %s, %s, %s, %s, %s, %.2f, %.2f, %.2f, %.2f, %.2f%%, %d",
 						k,
 						v.method,
 						v.route,
+						v.computer,
+						v.user,
+						v.code,
 						v.time_beg,
 						v.time_end,
 						v.ms_request,
