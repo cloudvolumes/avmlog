@@ -19,7 +19,7 @@ import (
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
 const VERSION = "v3.3.0 - Deathlok"
 
-const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Mount Start, Mount end";
+const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A";
 
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
@@ -27,6 +27,7 @@ var request_regexp   *regexp.Regexp = regexp.MustCompile("\\][[:space:]]+(P[0-9]
 var sql_regexp       *regexp.Regexp = regexp.MustCompile("( SQL: | SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
 var ntlm_regexp      *regexp.Regexp = regexp.MustCompile(" (\\(NTLM\\)|NTLM:) ")
 var debug_regexp     *regexp.Regexp = regexp.MustCompile(" DEBUG ")
+var error_regexp     *regexp.Regexp = regexp.MustCompile("( ERROR | Exception | undefined | NilClass )")
 
 var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) OK in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms\\)")
 var reconfig_regexp  *regexp.Regexp = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
@@ -36,6 +37,9 @@ var message_regexp   *regexp.Regexp = regexp.MustCompile(" P[0-9]+.*?[A-Z]+ (.*)
 var strip_regexp     *regexp.Regexp = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0-9%!-]+)?")
 var computer_regexp  *regexp.Regexp = regexp.MustCompile("workstation=(.*?)&")
 var user_regexp      *regexp.Regexp = regexp.MustCompile("username=(.*?)&")
+
+var vc_adapter_regexp  *regexp.Regexp = regexp.MustCompile("Acquired 'vcenter' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
+var esx_adapter_regexp *regexp.Regexp = regexp.MustCompile("Acquired 'esx' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
 
 type mount_report struct {
 	queue bool
@@ -60,6 +64,9 @@ type request_report struct {
 	ms_db float64
 	ms_view float64
 	percent_mount int
+	errors int64
+	vc_adapters int64
+	esx_adapters int64
 }
 
 func main() {
@@ -149,6 +156,7 @@ func main() {
 		line_count  := 0
 		line_after  := !parse_time // if not parsing time, then all lines are valid
 		request_ids := make([]string, 0)
+		adapter_cnt := int64(0)
 
 		scanner := bufio.NewScanner(reader);
 
@@ -171,7 +179,15 @@ func main() {
 							if !isJob(request_id) {
 								if timestamp := extractTimestamp(line); len(timestamp) > 1 {
 									if report, ok := reports[request_id]; ok {
-										if reconfig_match := reconfig_regexp.FindStringSubmatch(line); len(reconfig_match) > 1 {
+										if error_regexp.MatchString(line) {
+											report.errors += 1
+										} else if vc_adapter_match := vc_adapter_regexp.FindStringSubmatch(line); len(vc_adapter_match) > 1 {
+											adapter_cnt, _ = strconv.ParseInt(vc_adapter_match[1], 10, 64)
+											if adapter_cnt > report.vc_adapters { report.vc_adapters = adapter_cnt }
+										} else if esx_adapter_match := esx_adapter_regexp.FindStringSubmatch(line); len(esx_adapter_match) > 1 {
+											adapter_cnt, _ = strconv.ParseInt(esx_adapter_match[1], 10, 64)
+											if adapter_cnt > report.esx_adapters { report.esx_adapters = adapter_cnt }
+										} else if reconfig_match := reconfig_regexp.FindStringSubmatch(line); len(reconfig_match) > 1 {
 											if reconfig_match[1] == "execute_task" {
 												report.step++
 												report.mounts = append(report.mounts, &mount_report{mount_beg: timestamp, queue: true})
@@ -196,9 +212,9 @@ func main() {
 											report.time_end = timestamp;
 											report.code     = complete_match[1];
 
-											report.ms_request, _ = strconv.ParseFloat(complete_match[2], 64);
-											report.ms_view, _    = strconv.ParseFloat(complete_match[3], 64);
-											report.ms_db, _      = strconv.ParseFloat(complete_match[4], 64);
+											report.ms_request, _ = strconv.ParseFloat(complete_match[2], 64)
+											report.ms_view, _    = strconv.ParseFloat(complete_match[3], 64)
+											report.ms_db, _      = strconv.ParseFloat(complete_match[4], 64)
 										}
 									} else {
 										report := &request_report{step: -1, time_beg: timestamp}
@@ -250,14 +266,14 @@ func main() {
 
 			for k, v := range reports {
 				if len(v.method) > 0 && len(v.time_end) > 0 {
-					var ms_mount float64;
+					var ms_mount float64
 
 					for _, mount := range v.mounts {
-						ms_mount += mount.ms_mount;
+						ms_mount += mount.ms_mount
 					}
 
 					fmt.Println(fmt.Sprintf(
-						"%s, %s, /%s, %s, %s, %s, %s, %s, %.2f, %.2f, %.2f, %.2f, %.2f%%, %d",
+						"%s, %s, /%s, %s, %s, %s, %s, %s, %.2f, %.2f, %.2f, %.2f, %.2f%%, %d, %d, %d, %d",
 						k,
 						v.method,
 						v.route,
@@ -271,10 +287,13 @@ func main() {
 						v.ms_view,
 						ms_mount,
 						(ms_mount/v.ms_request) * 100,
-						len(v.mounts)))
+						len(v.mounts),
+						v.errors,
+						v.vc_adapters,
+						v.esx_adapters))
 				}
 			}
-			return;
+			return
 		}
 
 		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(request_ids), *find_str))
