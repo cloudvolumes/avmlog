@@ -17,7 +17,8 @@ import (
 // Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
 // convey the pattern with which to format/parse a given time/string
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
-const VERSION = "v3.3.0 - Deathlok"
+VERSION = "v3.3.0 - Deathlok"
+const BUFFER_SIZE = bufio.MaxScanTokenSize
 
 const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A";
 
@@ -153,15 +154,39 @@ func main() {
 			reader = parse_gz_reader
 		}
 
-		line_count  := 0
-		line_after  := !parse_time // if not parsing time, then all lines are valid
+		line_count := 0
+		line_after := !parse_time // if not parsing time, then all lines are valid
 		request_ids := make([]string, 0)
 		adapter_cnt := int64(0)
+		partial_line := false
+		long_lines := 0
 
-		scanner := bufio.NewScanner(reader);
+		reader := bufio.NewReaderSize(reader, BUFFER_SIZE)
 
-		for scanner.Scan() {
-			line := scanner.Text();
+		for {
+			bytes, isPrefix, err := reader.ReadLine()
+
+			line := string(bytes[:])
+
+			if err == io.EOF {
+				break
+			}
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if isPrefix {
+				if partial_line {
+					continue
+				} else {
+					partial_line = true
+					long_lines += 1
+				}
+			} else {
+				partial_line = false 
+			}
+			
 			if find_regexp.MatchString(line) {
 
 				if !line_after {
@@ -257,8 +282,8 @@ func main() {
 		file_size = float64(read_size) // set the filesize to the total known size
 		msg("") // empty line
 
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
+		if ( long_lines > 0 ) {
+			msg(fmt.Sprintf("Warning: truncated %d long lines that exceeded %d bytes", long_lines, BUFFER_SIZE))
 		}
 
 		if len(reports) > 0 {
@@ -324,10 +349,20 @@ func main() {
 	has_requests := len(unique_map) > 0
 	in_request := false
 
-	output_scanner := bufio.NewScanner(reader);
+	output_reader := bufio.NewReaderSize(reader, BUFFER_SIZE);
 
-	for output_scanner.Scan() {
-		line := output_scanner.Text();
+	for {
+		bytes, _, err := output_reader.ReadLine()
+
+		line := string(bytes[:])
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		output := false
 
@@ -399,10 +434,6 @@ func main() {
 				fmt.Println(line)
 			}
 		}
-	}
-
-	if err := output_scanner.Err(); err != nil {
-		log.Fatal(err)
 	}
 }
 
