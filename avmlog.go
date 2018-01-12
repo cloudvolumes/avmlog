@@ -17,7 +17,7 @@ import (
 // Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
 // convey the pattern with which to format/parse a given time/string
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
-const VERSION = "v4.0.0 - Elektra"
+const VERSION = "v4.0.1 - Enchantress"
 const BUFFER_SIZE = bufio.MaxScanTokenSize
 
 const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A";
@@ -30,7 +30,7 @@ var ntlm_regexp      *regexp.Regexp = regexp.MustCompile(" (\\(NTLM\\)|NTLM:) ")
 var debug_regexp     *regexp.Regexp = regexp.MustCompile(" DEBUG ")
 var error_regexp     *regexp.Regexp = regexp.MustCompile("( ERROR | Exception | undefined | NilClass )")
 
-var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) OK in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms\\)")
+var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) [A-Za-z ]+ in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms\\)")
 var reconfig_regexp  *regexp.Regexp = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
 var result_regexp    *regexp.Regexp = regexp.MustCompile(" with result \\\"([a-z]+)\\\"")
 var route_regexp     *regexp.Regexp = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)\\?")
