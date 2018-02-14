@@ -2,6 +2,9 @@ package main
 
 import (
 	"archive/zip"
+	"compress/gzip"
+	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -57,6 +60,37 @@ func RewindFile(file *os.File) {
 	file.Seek(0, 0)
 }
 
+func openFile(filename string) *os.File {
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return file
+}
+
+func fileSize(file *os.File) int64 {
+	if fi, err := file.Stat(); err != nil {
+		msg("Unable to determine file size")
+
+		return 1
+	} else {
+		msg(fmt.Sprintf("The file is %d bytes long", fi.Size()))
+
+		return fi.Size()
+	}
+}
+
+//Usage will print usage of flags with defaults
+func Usage() {
+	msg("AppVolumes Manager Log Tool - " + version)
+	msg("This tool can be used to extract the logs for specific requests from an AppVolumes Manager log")
+	msg("")
+	msg("Example:avmlog -after=\"2015-10-19 09:00:00\" -find \"apvuser2599\" -full -neat ~/Documents/scale.log.gz")
+	msg("")
+	flag.PrintDefaults()
+	msg("")
+}
+
 //CheckIfZip will check if argument file is .log or .zip
 func CheckIfZip(f string) string {
 	base := filepath.Base(f)
@@ -73,6 +107,44 @@ func basename(s string) string {
 		return s[:n]
 	}
 	return s
+}
+
+func msg(output string) {
+	fmt.Fprintln(os.Stderr, output)
+}
+
+func isGzip(filename string) bool {
+	return strings.HasSuffix(filename, ".gz")
+}
+
+func getGzipReader(file *os.File) *gzip.Reader {
+	gz_reader, err := gzip.NewReader(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return gz_reader
+}
+
+func showPercent(line_count int, position float64, after bool, matches int) {
+	fmt.Fprintf(
+		os.Stderr,
+		"Reading: %d lines, %.2f%% (after: %v, matches: %d)\r",
+		line_count,
+		position*100,
+		after,
+		matches)
+}
+
+//ShowBytes will show how many bytes read realtime
+func ShowBytes(line_count int, position float64, after bool, matches int) {
+	fmt.Fprintf(
+		os.Stderr,
+		"Reading: %d lines, %0.3f GB (after: %v, matches: %d)\r",
+		line_count,
+		position/1024/1024/1024,
+		after,
+		matches)
 }
 
 //CreateOneLogFile will take slice of filenames and create one big file

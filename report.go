@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -21,27 +22,30 @@ var (
 	requestRegexp         = regexp.MustCompile("\\][[:space:]]+(P[0-9]+[A-Za-z]+[0-9]*) ")
 	requestReconfigRegexp = regexp.MustCompile("\\][[:space:]]+(P[0-9]+[A-Za-z]+[0-9]*)+(RA || RS)* ")
 	resultRegexp          = regexp.MustCompile(" with result \\\"([a-z]+)\\\"")
-
-	ntlmStartRegexp = regexp.MustCompile(" Authenticating URL ")
-	ntlmEndRegexp   = regexp.MustCompile("NTLM authentication result:")
-
-	vcAdapterRegexp  = regexp.MustCompile("Acquired 'vcenter' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
-	esxAdapterRegexp = regexp.MustCompile("Acquired 'esx' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
-
-	computerRegexp    = regexp.MustCompile("workstation=(.*?)&")
-	userRegexp        = regexp.MustCompile("username=(.*?)&")
-	oldReconfigRegexp = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
-
-	taskRegexp     = regexp.MustCompile("Task total time: ([0-9.]+)s \\(execution time ([0-9.]+)s\\)")
-	sessionRegexp  = regexp.MustCompile(" NTLM authorization took: ([0-9.]+)ms")
-	errorRregexp   = regexp.MustCompile("( ERROR | Exception | undefined | NilClass )")
-	completeRegexp = regexp.MustCompile(" Completed ([0-9]+) [A-Za-z ]+ in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms\\)")
-	routeRegexp    = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)\\?")
-	reconfigRegexp = regexp.MustCompile("Async completed for ([A-Z]+)+")
-	mountTypeRegex = regexp.MustCompile("Volumes will be mounted [A-Za-z]+")
-	requestid      string
-	reports        = map[string]*RequestReport{}
-	b              []byte
+	ntlmRegexp            = regexp.MustCompile(" (\\(NTLM\\)|NTLM:) ")
+	ntlmStartRegexp       = regexp.MustCompile(" Authenticating URL ")
+	ntlmEndRegexp         = regexp.MustCompile("NTLM authentication result:")
+	vcAdapterRegexp       = regexp.MustCompile("Acquired 'vcenter' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
+	esxAdapterRegexp      = regexp.MustCompile("Acquired 'esx' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
+	computerRegexp        = regexp.MustCompile("workstation=(.*?)&")
+	userRegexp            = regexp.MustCompile("username=(.*?)&")
+	oldReconfigRegexp     = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
+	taskRegexp            = regexp.MustCompile("Task total time: ([0-9.]+)s \\(execution time ([0-9.]+)s\\)")
+	sessionRegexp         = regexp.MustCompile(" NTLM authorization took: ([0-9.]+)ms")
+	errorRregexp          = regexp.MustCompile("( ERROR | Exception | undefined | NilClass )")
+	completeRegexp        = regexp.MustCompile(" Completed ([0-9]+) [A-Za-z ]+ in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms\\)")
+	routeRegexp           = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)\\?")
+	reconfigRegexp        = regexp.MustCompile("Async completed for ([A-Z]+)+")
+	mountTypeRegex        = regexp.MustCompile("Volumes will be mounted [A-Za-z]+")
+	jobRegexp             = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
+	sqlRegexp             = regexp.MustCompile("( SQL: | SQL \\()|(EXEC sp_executesql N)|( CACHE \\()")
+	debugRegexp           = regexp.MustCompile(" DEBUG ")
+	errorRegexp           = regexp.MustCompile("( ERROR | Exception | undefined | NilClass )")
+	messageRegexp         = regexp.MustCompile(" P[0-9]+.*?[A-Z]+ (.*)")
+	stripRegexp           = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0-9%!-]+)?")
+	requestid             string
+	reports               = map[string]*RequestReport{}
+	b                     []byte
 )
 
 //RequestReport is struct used for populating request and its associated data
@@ -75,7 +79,7 @@ type RequestReport struct {
 }
 
 //ExtractRequestID extracts request id
-func ExtractRequestID(line string) string {
+func extractRequestID(line string) string {
 	if requestMatch := requestRegexp.FindStringSubmatch(line); len(requestMatch) > 1 {
 		return requestMatch[1]
 	}
@@ -94,6 +98,21 @@ func ExtractRequest(line string) string {
 
 }
 
+//GenerateRequestIdMap is used to construct map with request ids as key
+func GenerateRequestIdMap(request_ids *[]string) map[string]bool {
+	unique_map := make(map[string]bool, len(*request_ids))
+
+	for _, x := range *request_ids {
+		unique_map[x] = true
+	}
+
+	for k, _ := range unique_map {
+		msg(fmt.Sprintf("Request ID: %s", k))
+	}
+
+	return unique_map
+}
+
 //ExtractTimestamp extracts timestamp from production log
 func ExtractTimestamp(line string) string {
 	if timestampMatch := timestampRegexp.FindStringSubmatch(line); len(timestampMatch) > 1 {
@@ -101,6 +120,21 @@ func ExtractTimestamp(line string) string {
 	} else {
 		return ""
 	}
+}
+
+func isAfterTime(timestamp string, time_after *time.Time) bool {
+	if line_time, e := time.Parse(timeFormat, timestamp); e != nil {
+		msg(fmt.Sprintf("Got error %s", e))
+		return false
+	} else if line_time.Before(*time_after) {
+		return false
+	}
+
+	return true
+}
+
+func isJob(request_id string) bool {
+	return jobRegexp.MatchString(request_id)
 }
 
 //PrintReport wll print the output at the end of the run
@@ -156,7 +190,7 @@ func ExtractKeyFields() {
 			break
 		}
 		report := &RequestReport{}
-		requestid := ExtractRequestID(lineString)
+		requestid := extractRequestID(lineString)
 		requestExtracted := ExtractRequest(lineString)
 		if len(requestid) > 0 || len(requestExtracted) > 0 {
 			if strings.Contains(requestExtracted, requestid) {
