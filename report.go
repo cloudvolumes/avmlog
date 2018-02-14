@@ -99,18 +99,18 @@ func ExtractRequest(line string) string {
 }
 
 //GenerateRequestIdMap is used to construct map with request ids as key
-func GenerateRequestIdMap(request_ids *[]string) map[string]bool {
-	unique_map := make(map[string]bool, len(*request_ids))
+func GenerateRequestIdMap(requestIDS *[]string) map[string]bool {
+	uniqueMap := make(map[string]bool, len(*requestIDS))
 
-	for _, x := range *request_ids {
-		unique_map[x] = true
+	for _, x := range *requestIDS {
+		uniqueMap[x] = true
 	}
 
-	for k, _ := range unique_map {
+	for k, _ := range uniqueMap {
 		msg(fmt.Sprintf("Request ID: %s", k))
 	}
 
-	return unique_map
+	return uniqueMap
 }
 
 //ExtractTimestamp extracts timestamp from production log
@@ -122,19 +122,19 @@ func ExtractTimestamp(line string) string {
 	}
 }
 
-func isAfterTime(timestamp string, time_after *time.Time) bool {
+func isAfterTime(timestamp string, timeAfter *time.Time) bool {
 	if line_time, e := time.Parse(timeFormat, timestamp); e != nil {
 		msg(fmt.Sprintf("Got error %s", e))
 		return false
-	} else if line_time.Before(*time_after) {
+	} else if line_time.Before(*timeAfter) {
 		return false
 	}
 
 	return true
 }
 
-func isJob(request_id string) bool {
-	return jobRegexp.MatchString(request_id)
+func isJob(requestID string) bool {
+	return jobRegexp.MatchString(requestID)
 }
 
 //PrintReport wll print the output at the end of the run

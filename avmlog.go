@@ -19,38 +19,44 @@ const (
 	bufferSize = bufio.MaxScanTokenSize
 )
 
+var (
+	readSize  int64
+	uniqueMap map[string]bool
+	reader    io.Reader
+)
+
 //const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A"
 
 func main() {
-	hide_jobs_flag := flag.Bool("hide_jobs", false, "Hide background jobs")
-	hide_sql_flag := flag.Bool("hide_sql", false, "Hide SQL statements")
-	hide_ntlm_flag := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
-	hide_debug_flag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
-	only_msg_flag := flag.Bool("only_msg", false, "Output only the message portion")
-	report_flag := flag.Bool("report", false, "Collect request report")
-	full_flag := flag.Bool("full", false, "Show the full request/job for each found line")
-	neat_flag := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
-	detect_errors := flag.Bool("detect_errors", false, "Detect lines containing known error messages")
-	after_str := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
-	find_str := flag.String("find", "", "Find lines matching this regexp")
-	hide_str := flag.String("hide", "", "Hide lines matching this regexp")
+	hideJobsFlag := flag.Bool("hide_jobs", false, "Hide background jobs")
+	hideSqlFlag := flag.Bool("hide_sql", false, "Hide SQL statements")
+	hideNtlmFlag := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
+	hideDebugFlag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
+	onlyMsgFlag := flag.Bool("only_msg", false, "Output only the message portion")
+	reportFag := flag.Bool("report", false, "Collect request report")
+	fullFlag := flag.Bool("full", false, "Show the full request/job for each found line")
+	neatFlag := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
+	detectErrors := flag.Bool("detect_errors", false, "Detect lines containing known error messages")
+	afterStr := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
+	findStr := flag.String("find", "", "Find lines matching this regexp")
+	hideStr := flag.String("hide", "", "Hide lines matching this regexp")
 	percent := flag.Int("percent", 10, "how many cases (percentage) to use for report metrics")
 
 	flag.Parse()
 	args := flag.Args()
 
-	time_after, err := time.Parse(timeFormat, fmt.Sprintf("[%s UTC]", *after_str))
-	parse_time := false
-	after_count := 0
+	timeAfter, err := time.Parse(timeFormat, fmt.Sprintf("[%s UTC]", *afterStr))
+	parseTime := false
+	afterCount := 0
 
 	if err != nil {
-		if len(*after_str) > 0 {
-			msg(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *after_str))
+		if len(*afterStr) > 0 {
+			msg(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *afterStr))
 			Usage()
 			os.Exit(2)
 		}
 	} else {
-		parse_time = true
+		parseTime = true
 	}
 
 	if len(args) < 1 {
@@ -58,22 +64,22 @@ func main() {
 		os.Exit(2)
 	}
 
-	if *neat_flag {
-		*hide_jobs_flag = true
-		*hide_sql_flag = true
-		*hide_ntlm_flag = true
+	if *neatFlag {
+		*hideJobsFlag = true
+		*hideSqlFlag = true
+		*hideNtlmFlag = true
 	}
 
-	msg(fmt.Sprintf("Show full requests/jobs: %t", *full_flag))
-	msg(fmt.Sprintf("Show background job lines: %t", !*hide_jobs_flag))
-	msg(fmt.Sprintf("Show SQL lines: %t", !*hide_sql_flag))
-	msg(fmt.Sprintf("Show NTLM lines: %t", !*hide_ntlm_flag))
-	msg(fmt.Sprintf("Show DEBUG lines: %t", !*hide_debug_flag))
-	msg(fmt.Sprintf("Show lines after: %s", *after_str))
+	msg(fmt.Sprintf("Show full requests/jobs: %t", *fullFlag))
+	msg(fmt.Sprintf("Show background job lines: %t", !*hideJobsFlag))
+	msg(fmt.Sprintf("Show SQL lines: %t", !*hideSqlFlag))
+	msg(fmt.Sprintf("Show NTLM lines: %t", !*hideNtlmFlag))
+	msg(fmt.Sprintf("Show DEBUG lines: %t", !*hideDebugFlag))
+	msg(fmt.Sprintf("Show lines after: %s", *afterStr))
 
 	filename := args[0]
 	msg(fmt.Sprintf("Opening file: %s", filename))
-	if *report_flag {
+	if *reportFag {
 		percentReport = *percent
 
 		processReport()
@@ -81,39 +87,37 @@ func main() {
 	file := openFile(filename)
 	defer file.Close()
 
-	is_gzip := isGzip(filename)
-	file_size := float64(fileSize(file))
-	show_percent := !is_gzip
-	var read_size int64 = 0
+	isGzip := isGzip(filename)
+	fileSize := float64(fileSize(file))
+	showPercent := !isGzip
 
-	var reader io.Reader = file
-	var unique_map map[string]bool
+	reader = file
 
-	if *detect_errors {
-		*find_str = "( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )"
+	if *detectErrors {
+		*findStr = "( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )"
 	}
 
-	find_regexp, err := regexp.Compile(*find_str)
-	has_find := len(*find_str) > 0 && err == nil
+	findRegexp, err := regexp.Compile(*findStr)
+	hasFind := len(*findStr) > 0 && err == nil
 
-	hide_regexp, err := regexp.Compile(*hide_str)
-	has_hide := len(*hide_str) > 0 && err == nil
+	hideRegexp, err := regexp.Compile(*hideStr)
+	hasHide := len(*hideStr) > 0 && err == nil
 
-	if *report_flag || (*full_flag && has_find) {
-		if is_gzip {
+	if *reportFag || (*fullFlag && hasFind) {
+		if isGzip {
 			// for some reason if you create a reader but don't use it,
 			// an error is given when the output reader is created below
-			parse_gz_reader := getGzipReader(file)
-			defer parse_gz_reader.Close()
+			parseGzReader := getGzipReader(file)
+			defer parseGzReader.Close()
 
-			reader = parse_gz_reader
+			reader = parseGzReader
 		}
 
-		line_count := 0
-		line_after := !parse_time // if not parsing time, then all lines are valid
-		request_ids := make([]string, 0)
-		partial_line := false
-		long_lines := 0
+		lineCount := 0
+		lineAfter := !parseTime // if not parsing time, then all lines are valid
+		requestIds := make([]string, 0)
+		partialLine := false
+		longLines := 0
 
 		reader := bufio.NewReaderSize(reader, bufferSize)
 
@@ -131,59 +135,59 @@ func main() {
 			}
 
 			if isPrefix {
-				if partial_line {
+				if partialLine {
 					continue
 				} else {
-					partial_line = true
-					long_lines += 1
+					partialLine = true
+					longLines += 1
 				}
 			} else {
-				partial_line = false
+				partialLine = false
 			}
 
-			if find_regexp.MatchString(line) {
+			if findRegexp.MatchString(line) {
 
-				if !line_after {
+				if !lineAfter {
 					if timestamp := ExtractTimestamp(line); len(timestamp) > 1 {
-						if isAfterTime(timestamp, &time_after) {
-							line_after = true
-							after_count = line_count
+						if isAfterTime(timestamp, &timeAfter) {
+							lineAfter = true
+							afterCount = lineCount
 						}
 					}
 				}
 
-				if line_after {
-					if request_id := extractRequestID(line); len(request_id) > 1 {
-						if !*hide_jobs_flag || !isJob(request_id) {
-							request_ids = append(request_ids, request_id)
+				if lineAfter {
+					if requestID := extractRequestID(line); len(requestID) > 1 {
+						if !*hideJobsFlag || !isJob(requestID) {
+							requestIds = append(requestIds, requestID)
 						}
 					}
 				}
 			} //find
 
-			read_size += int64(len(line))
+			readSize += int64(len(line))
 
-			if line_count++; line_count%20000 == 0 {
-				if show_percent {
-					showPercent(line_count, float64(read_size)/file_size, line_after, len(request_ids))
+			if lineCount++; lineCount%20000 == 0 {
+				if showPercent {
+					showReadPercent(lineCount, float64(readSize)/fileSize, lineAfter, len(requestIds))
 				} else {
-					ShowBytes(line_count, float64(read_size), line_after, len(request_ids))
+					ShowBytes(lineCount, float64(readSize), lineAfter, len(requestIds))
 				}
 			}
 		}
 
-		file_size = float64(read_size) // set the filesize to the total known size
-		msg("")                        // empty line
+		fileSize = float64(readSize) // set the filesize to the total known size
+		msg("")                      // empty line
 
-		if long_lines > 0 {
-			msg(fmt.Sprintf("Warning: truncated %d long lines that exceeded %d bytes", long_lines, bufferSize))
+		if longLines > 0 {
+			msg(fmt.Sprintf("Warning: truncated %d long lines that exceeded %d bytes", longLines, bufferSize))
 		}
 
-		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(request_ids), *find_str))
-		unique_map = GenerateRequestIdMap(&request_ids)
+		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(requestIds), *findStr))
+		uniqueMap = GenerateRequestIdMap(&requestIds)
 
-		if len(unique_map) < 1 {
-			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", *find_str))
+		if len(uniqueMap) < 1 {
+			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", *findStr))
 			os.Exit(2)
 		}
 
@@ -192,25 +196,25 @@ func main() {
 		msg("Not printing -full requests, skipping request collection phase")
 	}
 
-	if is_gzip {
-		output_gz_reader := getGzipReader(file)
-		defer output_gz_reader.Close()
+	if isGzip {
+		outputGZReader := getGzipReader(file)
+		defer outputGZReader.Close()
 
-		reader = output_gz_reader
+		reader = outputGZReader
 	}
 
-	show_percent = read_size > int64(0)
-	read_size = 0
+	showPercent = readSize > int64(0)
+	readSize = 0
 
-	line_count := 0
-	line_after := !parse_time // if not parsing time, then all lines are valid
-	has_requests := len(unique_map) > 0
-	in_request := false
+	lineCount := 0
+	lineAfter := !parseTime // if not parsing time, then all lines are valid
+	hasRequests := len(uniqueMap) > 0
+	inRequest := false
 
-	output_reader := bufio.NewReaderSize(reader, bufferSize)
+	outputReader := bufio.NewReaderSize(reader, bufferSize)
 
 	for {
-		bytes, _, err := output_reader.ReadLine()
+		bytes, _, err := outputReader.ReadLine()
 
 		line := string(bytes[:])
 
@@ -224,67 +228,67 @@ func main() {
 
 		output := false
 
-		if !line_after {
-			read_size += int64(len(line))
+		if !lineAfter {
+			readSize += int64(len(line))
 
-			if line_count++; line_count%5000 == 0 {
-				if show_percent {
-					fmt.Fprintf(os.Stderr, "Reading: %.2f%%\r", (float64(read_size)/file_size)*100)
+			if lineCount++; lineCount%5000 == 0 {
+				if showPercent {
+					fmt.Fprintf(os.Stderr, "Reading: %.2f%%\r", (float64(readSize)/fileSize)*100)
 				} else {
-					fmt.Fprintf(os.Stderr, "Reading: %d lines, %0.3f GB\r", line_count, float64(read_size)/1024/1024/1024)
+					fmt.Fprintf(os.Stderr, "Reading: %d lines, %0.3f GB\r", lineCount, float64(readSize)/1024/1024/1024)
 				}
 			}
 
-			if after_count < line_count {
+			if afterCount < lineCount {
 				if timestamp := ExtractTimestamp(line); len(timestamp) > 1 {
-					if isAfterTime(timestamp, &time_after) {
+					if isAfterTime(timestamp, &timeAfter) {
 						msg("\n") // empty line
-						line_after = true
+						lineAfter = true
 					}
 				}
 			}
 		}
 
-		if line_after {
-			request_id := extractRequestID(line)
+		if lineAfter {
+			requestID := extractRequestID(line)
 
-			if has_requests {
-				if len(request_id) > 0 {
-					if unique_map[request_id] {
-						if *hide_jobs_flag && isJob(request_id) {
+			if hasRequests {
+				if len(requestID) > 0 {
+					if uniqueMap[requestID] {
+						if *hideJobsFlag && isJob(requestID) {
 							output = false
 						} else {
-							in_request = true
+							inRequest = true
 							output = true
 						}
 					} else {
-						in_request = false
+						inRequest = false
 					}
 
-				} else if len(request_id) < 1 && in_request {
+				} else if len(requestID) < 1 && inRequest {
 					output = true
 				}
-			} else if has_find {
-				output = find_regexp.MatchString(line)
+			} else if hasFind {
+				output = findRegexp.MatchString(line)
 			} else {
 				output = true
 			}
 		}
 
 		if output {
-			if *hide_sql_flag && sqlRegexp.MatchString(line) {
+			if *hideSqlFlag && sqlRegexp.MatchString(line) {
 				output = false
-			} else if *hide_ntlm_flag && ntlmRegexp.MatchString(line) {
+			} else if *hideNtlmFlag && ntlmRegexp.MatchString(line) {
 				output = false
-			} else if *hide_debug_flag && debugRegexp.MatchString(line) {
+			} else if *hideDebugFlag && debugRegexp.MatchString(line) {
 				output = false
-			} else if has_hide && hide_regexp.MatchString(line) {
+			} else if hasHide && hideRegexp.MatchString(line) {
 				output = false
 			}
 		}
 
 		if output {
-			if *only_msg_flag {
+			if *onlyMsgFlag {
 				if message_match := messageRegexp.FindStringSubmatch(line); len(message_match) > 1 {
 					fmt.Println(stripRegexp.ReplaceAllString(strings.TrimSpace(message_match[1]), "***"))
 				}

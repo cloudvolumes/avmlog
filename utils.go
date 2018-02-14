@@ -126,22 +126,22 @@ func getGzipReader(file *os.File) *gzip.Reader {
 	return gz_reader
 }
 
-func showPercent(line_count int, position float64, after bool, matches int) {
+func showReadPercent(lineCount int, position float64, after bool, matches int) {
 	fmt.Fprintf(
 		os.Stderr,
 		"Reading: %d lines, %.2f%% (after: %v, matches: %d)\r",
-		line_count,
+		lineCount,
 		position*100,
 		after,
 		matches)
 }
 
 //ShowBytes will show how many bytes read realtime
-func ShowBytes(line_count int, position float64, after bool, matches int) {
+func ShowBytes(lineCount int, position float64, after bool, matches int) {
 	fmt.Fprintf(
 		os.Stderr,
 		"Reading: %d lines, %0.3f GB (after: %v, matches: %d)\r",
-		line_count,
+		lineCount,
 		position/1024/1024/1024,
 		after,
 		matches)
