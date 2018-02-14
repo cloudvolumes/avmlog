@@ -120,7 +120,7 @@ Generates a comma-separated report containing one line for each request
 
 
 ### -percent
-calculates metrics for the given percent out of total requests. This works only with report flag.
+calculates metrics for the given percent out of total requests. This works only with report flag. The dafault is 10.
 `avmlog -report -percent=10 "/users/slawson/Documents/scale.log"`
 
 ## TODO
