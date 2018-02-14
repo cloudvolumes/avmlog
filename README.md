@@ -45,6 +45,13 @@ Find lines containing a computer or user name:
 
 `avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log.gz"`
 
+Generate report for all the production files included in zip:
+
+`avmlog -report -percent=10 scale.zip`
+
+Generate report for a single production files:
+
+`avmlog -report -percent=10 production.log`
 
 ### Flags:
 
