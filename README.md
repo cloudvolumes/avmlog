@@ -119,6 +119,10 @@ Generates a comma-separated report containing one line for each request
 `avmlog -report "/users/slawson/Documents/scale.log"`
 
 
+### -percent
+calculates metrics for the given percent out of total requests. This works only with report flag.
+`avmlog -report -percent=10 "/users/slawson/Documents/scale.log"`
+
 ## TODO
 
 Things someone can do to improve this:
