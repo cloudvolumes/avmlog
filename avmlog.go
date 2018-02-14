@@ -27,7 +27,7 @@ var (
 
 func main() {
 	hideJobsFlag := flag.Bool("hide_jobs", false, "Hide background jobs")
-	hideSqlFlag := flag.Bool("hide_sql", false, "Hide SQL statements")
+	hideSQLFlag := flag.Bool("hide_sql", false, "Hide SQL statements")
 	hideNtlmFlag := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
 	hideDebugFlag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
 	onlyMsgFlag := flag.Bool("only_msg", false, "Output only the message portion")
@@ -64,13 +64,13 @@ func main() {
 
 	if *neatFlag {
 		*hideJobsFlag = true
-		*hideSqlFlag = true
+		*hideSQLFlag = true
 		*hideNtlmFlag = true
 	}
 
 	msg(fmt.Sprintf("Show full requests/jobs: %t", *fullFlag))
 	msg(fmt.Sprintf("Show background job lines: %t", !*hideJobsFlag))
-	msg(fmt.Sprintf("Show SQL lines: %t", !*hideSqlFlag))
+	msg(fmt.Sprintf("Show SQL lines: %t", !*hideSQLFlag))
 	msg(fmt.Sprintf("Show NTLM lines: %t", !*hideNtlmFlag))
 	msg(fmt.Sprintf("Show DEBUG lines: %t", !*hideDebugFlag))
 	msg(fmt.Sprintf("Show lines after: %s", *afterStr))
@@ -182,7 +182,7 @@ func main() {
 		}
 
 		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(requestIds), *findStr))
-		uniqueMap = generateRequestIdMap(&requestIds)
+		uniqueMap = generateRequestIDMap(&requestIds)
 
 		if len(uniqueMap) < 1 {
 			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", *findStr))
@@ -274,7 +274,7 @@ func main() {
 		}
 
 		if output {
-			if *hideSqlFlag && sqlRegexp.MatchString(line) {
+			if *hideSQLFlag && sqlRegexp.MatchString(line) {
 				output = false
 			} else if *hideNtlmFlag && ntlmRegexp.MatchString(line) {
 				output = false

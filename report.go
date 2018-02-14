@@ -48,7 +48,6 @@ var (
 	b                     []byte
 )
 
-//RequestReport is struct used for populating request and its associated data
 type requestReport struct {
 	step               int
 	timeBeg            string
@@ -96,14 +95,14 @@ func extractRequest(line string) string {
 
 }
 
-func generateRequestIdMap(requestIDS *[]string) map[string]bool {
+func generateRequestIDMap(requestIDS *[]string) map[string]bool {
 	uniqueMap := make(map[string]bool, len(*requestIDS))
 
 	for _, x := range *requestIDS {
 		uniqueMap[x] = true
 	}
 
-	for k, _ := range uniqueMap {
+	for k := range uniqueMap {
 		msg(fmt.Sprintf("Request ID: %s", k))
 	}
 
@@ -113,16 +112,16 @@ func generateRequestIdMap(requestIDS *[]string) map[string]bool {
 func extractTimestamp(line string) string {
 	if timestampMatch := timestampRegexp.FindStringSubmatch(line); len(timestampMatch) > 1 {
 		return timestampMatch[1]
-	} else {
-		return ""
 	}
+	return ""
+
 }
 
 func isAfterTime(timestamp string, timeAfter *time.Time) bool {
-	if line_time, e := time.Parse(timeFormat, timestamp); e != nil {
+	if lineTime, e := time.Parse(timeFormat, timestamp); e != nil {
 		msg(fmt.Sprintf("Got error %s", e))
 		return false
-	} else if line_time.Before(*timeAfter) {
+	} else if lineTime.Before(*timeAfter) {
 		return false
 	}
 
@@ -133,7 +132,6 @@ func isJob(requestID string) bool {
 	return jobRegexp.MatchString(requestID)
 }
 
-//PrintReport wll print the output at the end of the run
 func printReport() {
 	fmt.Println(reportHeaders)
 
@@ -175,7 +173,6 @@ func printReport() {
 	}
 }
 
-//ExtractKeyFields loops through the file and generates reports
 func extractKeyFields() {
 	reader := bytes.NewReader(b)
 	r := bufio.NewReader(reader)

@@ -18,7 +18,6 @@ var (
 	prunnedFiles []string
 )
 
-//ReportSorter helps custom sort the struct
 type reportSorter []*requestReport
 
 //Below 3  function are used for custom sorting
@@ -102,12 +101,12 @@ func isGzip(filename string) bool {
 }
 
 func getGzipReader(file *os.File) *gzip.Reader {
-	gz_reader, err := gzip.NewReader(file)
+	gzReader, err := gzip.NewReader(file)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return gz_reader
+	return gzReader
 }
 
 func showReadPercent(lineCount int, position float64, after bool, matches int) {
