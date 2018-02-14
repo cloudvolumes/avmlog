@@ -17,24 +17,24 @@ var (
 func processReport() {
 
 	args := flag.Args()
-	base := CheckIfZip(args[0])
+	base := checkIfZip(args[0])
 	if len(base) > 0 {
 		path = "production"
-		filenames, err := Unzip(args[0], "output")
-		CheckError("Unable to unzip", err)
+		filenames, err := unzip(args[0], "output")
+		checkError("Unable to unzip", err)
 		sort.Sort(sort.StringSlice(filenames))
-		CreateOneLogFile(filenames)
+		createOneLogFile(filenames)
 		file, err = os.Open("output/production.log")
-		CheckError("Can not open file", err)
+		checkError("Can not open file", err)
 
 	} else {
 		file, err = os.Open(args[0])
-		CheckError("Can not open file", err)
+		checkError("Can not open file", err)
 	}
 	b, err = ioutil.ReadAll(file)
-	ExtractKeyFields()
-	PrintReport()
-	CreateMetrics()
+	extractKeyFields()
+	printReport()
+	createMetrics()
 	file.Close()
 	if len(base) > 0 {
 		os.RemoveAll("output")

@@ -19,33 +19,20 @@ var (
 )
 
 //ReportSorter helps custom sort the struct
-type ReportSorter []*RequestReport
-
-//FileSorter helps custom sort the struct to sort based on Modtime
-type FileSorter []*os.File
+type reportSorter []*requestReport
 
 //Below 3  function are used for custom sorting
-func (a ReportSorter) Len() int           { return len(a) }
-func (a ReportSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ReportSorter) Less(i, j int) bool { return a[i].totalRequestTime < a[j].totalRequestTime }
+func (a reportSorter) Len() int           { return len(a) }
+func (a reportSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a reportSorter) Less(i, j int) bool { return a[i].totalRequestTime < a[j].totalRequestTime }
 
-//FileExist chaecks if the filename given in argument exist if not will exit
-func FileExist(args []string) bool {
-	if len(args) < 1 {
-		os.Exit(2)
-	}
-	return true
-}
-
-//CheckError will log fatal error and will exit
-func CheckError(message string, err error) {
+func checkError(message string, err error) {
 	if err != nil {
 		log.Fatal(message, err)
 	}
 }
 
-//TimeDifference will take two dates in string and return their diff in float64
-func TimeDifference(a string, b string) float64 {
+func timeDifference(a string, b string) float64 {
 	diff := 0.0
 	if a != "" && b != "" {
 		startTime, _ := time.Parse(timeFormat, a)
@@ -55,8 +42,7 @@ func TimeDifference(a string, b string) float64 {
 	return diff
 }
 
-//RewindFile will seek to top of the file
-func RewindFile(file *os.File) {
+func rewindFile(file *os.File) {
 	file.Seek(0, 0)
 }
 
@@ -80,8 +66,7 @@ func fileSize(file *os.File) int64 {
 	}
 }
 
-//Usage will print usage of flags with defaults
-func Usage() {
+func usage() {
 	msg("AppVolumes Manager Log Tool - " + version)
 	msg("This tool can be used to extract the logs for specific requests from an AppVolumes Manager log")
 	msg("")
@@ -91,8 +76,7 @@ func Usage() {
 	msg("")
 }
 
-//CheckIfZip will check if argument file is .log or .zip
-func CheckIfZip(f string) string {
+func checkIfZip(f string) string {
 	base := filepath.Base(f)
 	extension := filepath.Ext(f)
 	if strings.ToLower(extension) == ".zip" {
@@ -136,8 +120,7 @@ func showReadPercent(lineCount int, position float64, after bool, matches int) {
 		matches)
 }
 
-//ShowBytes will show how many bytes read realtime
-func ShowBytes(lineCount int, position float64, after bool, matches int) {
+func showBytes(lineCount int, position float64, after bool, matches int) {
 	fmt.Fprintf(
 		os.Stderr,
 		"Reading: %d lines, %0.3f GB (after: %v, matches: %d)\r",
@@ -147,18 +130,17 @@ func ShowBytes(lineCount int, position float64, after bool, matches int) {
 		matches)
 }
 
-//CreateOneLogFile will take slice of filenames and create one big file
-func CreateOneLogFile(files []string) {
+func createOneLogFile(files []string) {
 	f, err := os.Create("output/production.log")
 	f, err = os.OpenFile("output/production.log", os.O_WRONLY|os.O_APPEND, 0644)
 
-	CheckError("Failed opening file", err)
+	checkError("Failed opening file", err)
 	defer f.Close()
 	for _, v := range files {
 		logFile, err := os.Open(v)
-		CheckError("Failed opening file", err)
+		checkError("Failed opening file", err)
 		content, err := ioutil.ReadAll(logFile)
-		CheckError("Failed to read from ", err)
+		checkError("Failed to read from ", err)
 		f.Write(content)
 		logFile.Close()
 	}
@@ -166,7 +148,7 @@ func CreateOneLogFile(files []string) {
 
 // Unzip will un-compress a zip archive,
 // moving all files and folders to an output directory specified by dest
-func Unzip(src, dest string) ([]string, error) {
+func unzip(src, dest string) ([]string, error) {
 
 	var filenames []string
 
@@ -228,24 +210,4 @@ func Unzip(src, dest string) ([]string, error) {
 	}
 
 	return prunnedFiles, nil
-}
-
-//RemoveContents will delete the output folder created for log
-func RemoveContents(dir string) error {
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		err = os.RemoveAll(filepath.Join(dir, name))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

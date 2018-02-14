@@ -44,12 +44,12 @@ var (
 	messageRegexp         = regexp.MustCompile(" P[0-9]+.*?[A-Z]+ (.*)")
 	stripRegexp           = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0-9%!-]+)?")
 	requestid             string
-	reports               = map[string]*RequestReport{}
+	reports               = map[string]*requestReport{}
 	b                     []byte
 )
 
 //RequestReport is struct used for populating request and its associated data
-type RequestReport struct {
+type requestReport struct {
 	step               int
 	timeBeg            string
 	timeEnd            string
@@ -78,7 +78,6 @@ type RequestReport struct {
 	totalRequestTime   float64
 }
 
-//ExtractRequestID extracts request id
 func extractRequestID(line string) string {
 	if requestMatch := requestRegexp.FindStringSubmatch(line); len(requestMatch) > 1 {
 		return requestMatch[1]
@@ -87,8 +86,7 @@ func extractRequestID(line string) string {
 
 }
 
-//ExtractRequest is used to extract callback requests
-func ExtractRequest(line string) string {
+func extractRequest(line string) string {
 
 	if requestMatch := requestReconfigRegexp.FindStringSubmatch(line); len(requestMatch) > 1 {
 		returnString := strings.Replace(requestMatch[0], "]", "", 1)
@@ -98,8 +96,7 @@ func ExtractRequest(line string) string {
 
 }
 
-//GenerateRequestIdMap is used to construct map with request ids as key
-func GenerateRequestIdMap(requestIDS *[]string) map[string]bool {
+func generateRequestIdMap(requestIDS *[]string) map[string]bool {
 	uniqueMap := make(map[string]bool, len(*requestIDS))
 
 	for _, x := range *requestIDS {
@@ -113,8 +110,7 @@ func GenerateRequestIdMap(requestIDS *[]string) map[string]bool {
 	return uniqueMap
 }
 
-//ExtractTimestamp extracts timestamp from production log
-func ExtractTimestamp(line string) string {
+func extractTimestamp(line string) string {
 	if timestampMatch := timestampRegexp.FindStringSubmatch(line); len(timestampMatch) > 1 {
 		return timestampMatch[1]
 	} else {
@@ -138,7 +134,7 @@ func isJob(requestID string) bool {
 }
 
 //PrintReport wll print the output at the end of the run
-func PrintReport() {
+func printReport() {
 	fmt.Println(reportHeaders)
 
 	for k, v := range reports {
@@ -180,7 +176,7 @@ func PrintReport() {
 }
 
 //ExtractKeyFields loops through the file and generates reports
-func ExtractKeyFields() {
+func extractKeyFields() {
 	reader := bytes.NewReader(b)
 	r := bufio.NewReader(reader)
 	for {
@@ -189,12 +185,12 @@ func ExtractKeyFields() {
 		if err == io.EOF {
 			break
 		}
-		report := &RequestReport{}
+		report := &requestReport{}
 		requestid := extractRequestID(lineString)
-		requestExtracted := ExtractRequest(lineString)
+		requestExtracted := extractRequest(lineString)
 		if len(requestid) > 0 || len(requestExtracted) > 0 {
 			if strings.Contains(requestExtracted, requestid) {
-				if timestamp := ExtractTimestamp(lineString); len(timestamp) > 1 {
+				if timestamp := extractTimestamp(lineString); len(timestamp) > 1 {
 					if routeLine := routeRegexp.FindStringSubmatch(lineString); len(routeLine) > 2 {
 						report.route = routeLine[2]
 						if computerLine := computerRegexp.FindStringSubmatch(lineString); len(computerLine) > 0 {
@@ -228,7 +224,7 @@ func ExtractKeyFields() {
 								report.mountType = strings.Fields(mountTypeLine[0])[4]
 							} else if ntlmLine := ntlmEndRegexp.FindStringSubmatch(lineString); len(ntlmLine) > 0 {
 								report.ntlmEnd = timestamp
-								report.totalNtlmTime = TimeDifference(report.ntmlStart, report.ntlmEnd)
+								report.totalNtlmTime = timeDifference(report.ntmlStart, report.ntlmEnd)
 							} else if sessionLine := sessionRegexp.FindStringSubmatch(lineString); len(sessionLine) > 0 {
 								report.session, _ = strconv.ParseFloat(sessionLine[1], 64)
 							} else if esxadapterline := esxAdapterRegexp.FindStringSubmatch(lineString); len(esxadapterline) > 2 {
@@ -247,7 +243,7 @@ func ExtractKeyFields() {
 									report.reconfigStart = timestamp
 								} else if reconfigmatch[1] == "process_task" {
 									report.reconfigEnd = timestamp
-									report.totalReconfig = TimeDifference(report.reconfigStart, report.reconfigEnd)
+									report.totalReconfig = timeDifference(report.reconfigStart, report.reconfigEnd)
 									report.totalReconfig = report.totalReconfig * 1000
 								}
 							}

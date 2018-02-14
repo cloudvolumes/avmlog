@@ -8,18 +8,17 @@ import (
 )
 
 var (
-	sortedReports []*RequestReport
+	sortedReports []*requestReport
 	averageCase   int
 )
 
-//CreateMetrics will send correct data to calAvergage
-func CreateMetrics() {
+func createMetrics() {
 	for k, v := range reports {
 		if v.route == "user-login" && v.code == "200" {
 			sortedReports = append(sortedReports, reports[k])
 		}
 	}
-	sort.Sort(ReportSorter(sortedReports))
+	sort.Sort(reportSorter(sortedReports))
 
 	totalSortedReports := len(sortedReports)
 	averageCase = int((totalSortedReports * percentReport) / 100)
@@ -37,7 +36,7 @@ func CreateMetrics() {
 
 }
 
-func calAvergage(testCase string, sortSlice []*RequestReport) {
+func calAvergage(testCase string, sortSlice []*requestReport) {
 	atRequest := 0.0
 	aRequest := 0.0
 	aDB := 0.0

@@ -25,8 +25,6 @@ var (
 	reader    io.Reader
 )
 
-//const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A"
-
 func main() {
 	hideJobsFlag := flag.Bool("hide_jobs", false, "Hide background jobs")
 	hideSqlFlag := flag.Bool("hide_sql", false, "Hide SQL statements")
@@ -52,7 +50,7 @@ func main() {
 	if err != nil {
 		if len(*afterStr) > 0 {
 			msg(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *afterStr))
-			Usage()
+			usage()
 			os.Exit(2)
 		}
 	} else {
@@ -60,7 +58,7 @@ func main() {
 	}
 
 	if len(args) < 1 {
-		Usage()
+		usage()
 		os.Exit(2)
 	}
 
@@ -148,7 +146,7 @@ func main() {
 			if findRegexp.MatchString(line) {
 
 				if !lineAfter {
-					if timestamp := ExtractTimestamp(line); len(timestamp) > 1 {
+					if timestamp := extractTimestamp(line); len(timestamp) > 1 {
 						if isAfterTime(timestamp, &timeAfter) {
 							lineAfter = true
 							afterCount = lineCount
@@ -171,7 +169,7 @@ func main() {
 				if showPercent {
 					showReadPercent(lineCount, float64(readSize)/fileSize, lineAfter, len(requestIds))
 				} else {
-					ShowBytes(lineCount, float64(readSize), lineAfter, len(requestIds))
+					showBytes(lineCount, float64(readSize), lineAfter, len(requestIds))
 				}
 			}
 		}
@@ -184,14 +182,14 @@ func main() {
 		}
 
 		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(requestIds), *findStr))
-		uniqueMap = GenerateRequestIdMap(&requestIds)
+		uniqueMap = generateRequestIdMap(&requestIds)
 
 		if len(uniqueMap) < 1 {
 			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", *findStr))
 			os.Exit(2)
 		}
 
-		RewindFile(file)
+		rewindFile(file)
 	} else {
 		msg("Not printing -full requests, skipping request collection phase")
 	}
@@ -240,7 +238,7 @@ func main() {
 			}
 
 			if afterCount < lineCount {
-				if timestamp := ExtractTimestamp(line); len(timestamp) > 1 {
+				if timestamp := extractTimestamp(line); len(timestamp) > 1 {
 					if isAfterTime(timestamp, &timeAfter) {
 						msg("\n") // empty line
 						lineAfter = true
