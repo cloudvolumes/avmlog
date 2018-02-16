@@ -23,8 +23,8 @@ func createMetrics() {
 	totalSortedReports := len(sortedReports)
 	averageCase = int((totalSortedReports * percentReport) / 100)
 
-	if averageCase > totalSortedReports {
-		log.Fatal("average given is greater than total records")
+	if totalSortedReports < 1 {
+		log.Fatal("No records found for metrics.")
 	}
 	avgAll := "Avg. of all " + strconv.Itoa(totalSortedReports)
 	fmt.Println(compareHeaders)

@@ -137,7 +137,7 @@ func main() {
 					continue
 				} else {
 					partialLine = true
-					longLines += 1
+					longLines++
 				}
 			} else {
 				partialLine = false
