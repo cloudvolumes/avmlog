@@ -20,7 +20,7 @@ const (
 var (
 	timestampRegexp       = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
 	requestRegexp         = regexp.MustCompile("\\][[:space:]]+(P[0-9]+[A-Za-z]+[0-9]*) ")
-	requestReconfigRegexp = regexp.MustCompile("\\][[:space:]]+(P[0-9]+[A-Za-z]+[0-9]*)+(RA || RS)* ")
+	requestReconfigRegexp = regexp.MustCompile("\\][[:space:]]+(P[0-9]+[A-Za-z]+[0-9]*)+(RA || RS)+ ")
 	resultRegexp          = regexp.MustCompile(" with result \\\"([a-z]+)\\\"")
 	ntlmRegexp            = regexp.MustCompile(" (\\(NTLM\\)|NTLM:) ")
 	ntlmStartRegexp       = regexp.MustCompile(" Authenticating URL ")
@@ -140,6 +140,8 @@ func printReport() {
 			if !(v.mount > 0) {
 				if v.totalReconfig > 0 {
 					v.mount = (v.totalReconfig)
+				} else {
+					v.mount = v.hostTaskTime
 				}
 			}
 			if v.mountType == "asynchronously" {
@@ -169,6 +171,7 @@ func printReport() {
 				v.totalNtlmTime,
 				v.session,
 				v.mountType))
+
 		}
 	}
 }
@@ -186,63 +189,64 @@ func extractKeyFields() {
 		requestid := extractRequestID(lineString)
 		requestExtracted := extractRequest(lineString)
 		if len(requestid) > 0 || len(requestExtracted) > 0 {
-			if strings.Contains(requestExtracted, requestid) {
-				if timestamp := extractTimestamp(lineString); len(timestamp) > 1 {
-					if routeLine := routeRegexp.FindStringSubmatch(lineString); len(routeLine) > 2 {
-						report.route = routeLine[2]
-						if computerLine := computerRegexp.FindStringSubmatch(lineString); len(computerLine) > 0 {
-							report.computer = computerLine[1]
-						} else if userLine := userRegexp.FindStringSubmatch(lineString); len(userLine) > 0 {
-							report.user = userLine[1]
-						}
-						report.timeBeg = timestamp
-						report.requestID = requestid
-						reports[requestid] = report
-					} else {
+			if timestamp := extractTimestamp(lineString); len(timestamp) > 1 {
+				if routeLine := routeRegexp.FindStringSubmatch(lineString); len(routeLine) > 2 {
+					report.route = routeLine[2]
+					if computerLine := computerRegexp.FindStringSubmatch(lineString); len(computerLine) > 0 {
+						report.computer = computerLine[1]
+					}
+					if userLine := userRegexp.FindStringSubmatch(lineString); len(userLine) > 0 {
+						report.user = userLine[1]
+					}
+					report.timeBeg = timestamp
+					report.requestID = requestid
+					reports[requestid] = report
+				} else {
+					if strings.Contains(requestExtracted, requestid) {
 						if len(requestid) == 0 && len(requestExtracted) > 0 {
 							requestid = requestExtracted[:len(requestExtracted)-2]
 						}
-						if report, ok := reports[requestid]; ok {
-							if completeMatch := completeRegexp.FindStringSubmatch(lineString); len(completeMatch) > 1 {
-								report.timeEnd = timestamp
-								report.code = completeMatch[1]
-								report.requestTime, _ = strconv.ParseFloat(completeMatch[2], 64)
-								report.view, _ = strconv.ParseFloat(completeMatch[3], 64)
-								report.db, _ = strconv.ParseFloat(completeMatch[4], 64)
-							} else if reconfigLine := reconfigRegexp.FindStringSubmatch(lineString); len(reconfigLine) > 1 {
-								mount := strings.Fields(lineString)[18]
-								if len(mount) > 0 {
-									report.mount, _ = strconv.ParseFloat(mount, 64)
-									report.mount = report.mount * 1000
-								}
-							} else if ntlmLine := ntlmStartRegexp.FindStringSubmatch(lineString); len(ntlmLine) > 0 {
-								report.ntmlStart = timestamp
-							} else if mountTypeLine := mountTypeRegex.FindStringSubmatch(lineString); len(mountTypeLine) > 0 {
-								report.mountType = strings.Fields(mountTypeLine[0])[4]
-							} else if ntlmLine := ntlmEndRegexp.FindStringSubmatch(lineString); len(ntlmLine) > 0 {
-								report.ntlmEnd = timestamp
-								report.totalNtlmTime = timeDifference(report.ntmlStart, report.ntlmEnd)
-							} else if sessionLine := sessionRegexp.FindStringSubmatch(lineString); len(sessionLine) > 0 {
-								report.session, _ = strconv.ParseFloat(sessionLine[1], 64)
-							} else if esxadapterline := esxAdapterRegexp.FindStringSubmatch(lineString); len(esxadapterline) > 2 {
-								report.esxAdapterTime, _ = strconv.ParseFloat(esxadapterline[3], 64)
-								report.esxAdapterTime = report.esxAdapterTime * 1000
-							} else if vcadapterLine := vcAdapterRegexp.FindStringSubmatch(lineString); len(vcadapterLine) > 2 {
-								report.vcenterAdapterTime, _ = strconv.ParseFloat(vcadapterLine[3], 64)
-								report.vcenterAdapterTime = report.vcenterAdapterTime * 1000
-							} else if hosttimeLine := taskRegexp.FindStringSubmatch(lineString); len(hosttimeLine) > 1 {
-								report.hostTaskTime, _ = strconv.ParseFloat(hosttimeLine[1], 64)
-								report.hostTaskTime = report.hostTaskTime * 1000
-								report.hostExecutionTime, _ = strconv.ParseFloat(hosttimeLine[2], 64)
-								report.hostExecutionTime = report.hostExecutionTime * 1000
-							} else if reconfigmatch := oldReconfigRegexp.FindStringSubmatch(lineString); len(reconfigmatch) > 1 {
-								if reconfigmatch[1] == "execute_task" {
-									report.reconfigStart = timestamp
-								} else if reconfigmatch[1] == "process_task" {
-									report.reconfigEnd = timestamp
-									report.totalReconfig = timeDifference(report.reconfigStart, report.reconfigEnd)
-									report.totalReconfig = report.totalReconfig * 1000
-								}
+					}
+					if report, ok := reports[requestid]; ok {
+						if completeMatch := completeRegexp.FindStringSubmatch(lineString); len(completeMatch) > 1 {
+							report.timeEnd = timestamp
+							report.code = completeMatch[1]
+							report.requestTime, _ = strconv.ParseFloat(completeMatch[2], 64)
+							report.view, _ = strconv.ParseFloat(completeMatch[3], 64)
+							report.db, _ = strconv.ParseFloat(completeMatch[4], 64)
+						} else if reconfigLine := reconfigRegexp.FindStringSubmatch(lineString); len(reconfigLine) > 1 {
+							mount := strings.Fields(lineString)[18]
+							if len(mount) > 0 {
+								report.mount, _ = strconv.ParseFloat(mount, 64)
+								report.mount = report.mount * 1000
+							}
+						} else if ntlmLine := ntlmStartRegexp.FindStringSubmatch(lineString); len(ntlmLine) > 0 {
+							report.ntmlStart = timestamp
+						} else if mountTypeLine := mountTypeRegex.FindStringSubmatch(lineString); len(mountTypeLine) > 0 {
+							report.mountType = strings.Fields(mountTypeLine[0])[4]
+						} else if ntlmLine := ntlmEndRegexp.FindStringSubmatch(lineString); len(ntlmLine) > 0 {
+							report.ntlmEnd = timestamp
+							report.totalNtlmTime = timeDifference(report.ntmlStart, report.ntlmEnd)
+						} else if sessionLine := sessionRegexp.FindStringSubmatch(lineString); len(sessionLine) > 0 {
+							report.session, _ = strconv.ParseFloat(sessionLine[1], 64)
+						} else if esxadapterline := esxAdapterRegexp.FindStringSubmatch(lineString); len(esxadapterline) > 2 {
+							report.esxAdapterTime, _ = strconv.ParseFloat(esxadapterline[3], 64)
+							report.esxAdapterTime = report.esxAdapterTime * 1000
+						} else if vcadapterLine := vcAdapterRegexp.FindStringSubmatch(lineString); len(vcadapterLine) > 2 {
+							report.vcenterAdapterTime, _ = strconv.ParseFloat(vcadapterLine[3], 64)
+							report.vcenterAdapterTime = report.vcenterAdapterTime * 1000
+						} else if hosttimeLine := taskRegexp.FindStringSubmatch(lineString); len(hosttimeLine) > 1 {
+							report.hostTaskTime, _ = strconv.ParseFloat(hosttimeLine[1], 64)
+							report.hostTaskTime = report.hostTaskTime * 1000
+							report.hostExecutionTime, _ = strconv.ParseFloat(hosttimeLine[2], 64)
+							report.hostExecutionTime = report.hostExecutionTime * 1000
+						} else if reconfigmatch := oldReconfigRegexp.FindStringSubmatch(lineString); len(reconfigmatch) > 1 {
+							if reconfigmatch[1] == "execute_task" {
+								report.reconfigStart = timestamp
+							} else if reconfigmatch[1] == "process_task" {
+								report.reconfigEnd = timestamp
+								report.totalReconfig = timeDifference(report.reconfigStart, report.reconfigEnd)
+								report.totalReconfig = report.totalReconfig * 1000
 							}
 						}
 					}
