@@ -39,6 +39,7 @@ func main() {
 	findStr := flag.String("find", "", "Find lines matching this regexp")
 	hideStr := flag.String("hide", "", "Hide lines matching this regexp")
 	percent := flag.Int("percent", 10, "how many cases (percentage) to use for report metrics")
+	metrics := flag.String("metrics", "totalrequest", "Generate metrics based on which attributes")
 
 	flag.Parse()
 	args := flag.Args()
@@ -79,6 +80,7 @@ func main() {
 	msg(fmt.Sprintf("Opening file: %s", filename))
 	if *reportFag {
 		percentReport = *percent
+		metricReport = *metrics
 
 		processReport()
 	}

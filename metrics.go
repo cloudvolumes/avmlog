@@ -5,6 +5,7 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -12,13 +13,17 @@ var (
 	averageCase   int
 )
 
-func createMetrics() {
+func createMetrics(sorter string) {
 	for k, v := range reports {
-		if v.route == "user-login" && v.code == "200" {
+		if v.route == "user-login" && v.code == "200" && v.mount > 0 {
 			sortedReports = append(sortedReports, reports[k])
 		}
 	}
-	sort.Sort(reportSorter(sortedReports))
+	if strings.ToLower(sorter) == "totaltime" {
+		sort.Sort(reportSorter(sortedReports))
+	} else if strings.ToLower(sorter) == "mount" {
+		sort.Sort(reportMountSorter(sortedReports))
+	}
 
 	totalSortedReports := len(sortedReports)
 	averageCase = int((totalSortedReports * percentReport) / 100)

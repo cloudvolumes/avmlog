@@ -130,6 +130,14 @@ Generates a comma-separated report containing one line for each request
 calculates metrics for the given percent out of total requests. This works only with report flag. The dafault is 10.
 `avmlog -report -percent=10 "/users/slawson/Documents/scale.log"`
 
+### -metrics
+calculates metrics based on either totaltime or mount time. Default is totaltime.
+`avmlog -report -percent=10 -metrics=totaltime,mount "/users/slawson/Documents/scale.log"`
+
+`avmlog -report -percent=10 -metrics=totaltime "/users/slawson/Documents/scale.log"`
+
+`avmlog -report -percent=10 -metrics=mount "/users/slawson/Documents/scale.log"`
+
 ## TODO
 
 Things someone can do to improve this:

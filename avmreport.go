@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
+	"strings"
 )
 
 var (
@@ -12,6 +13,7 @@ var (
 	err           error
 	path          string
 	percentReport int
+	metricReport  string
 )
 
 func processReport() {
@@ -34,7 +36,10 @@ func processReport() {
 	b, err = ioutil.ReadAll(file)
 	extractKeyFields()
 	printReport()
-	createMetrics()
+	allmetrics := strings.Split(metricReport, ",")
+	for _, v := range allmetrics {
+		createMetrics(v)
+	}
 	file.Close()
 	if len(base) > 0 {
 		os.RemoveAll("output")

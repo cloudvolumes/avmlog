@@ -20,11 +20,16 @@ var (
 )
 
 type reportSorter []*requestReport
+type reportMountSorter []*requestReport
 
-//Below 3  function are used for custom sorting
+//Below 3  function are used for custom sorting based on total request time
 func (a reportSorter) Len() int           { return len(a) }
 func (a reportSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a reportSorter) Less(i, j int) bool { return a[i].totalRequestTime < a[j].totalRequestTime }
+
+func (a reportMountSorter) Len() int           { return len(a) }
+func (a reportMountSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a reportMountSorter) Less(i, j int) bool { return a[i].mount < a[j].mount }
 
 func checkError(message string, err error) {
 	if err != nil {
