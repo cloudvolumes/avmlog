@@ -132,6 +132,7 @@ calculates metrics for the given percent out of total requests. This works only 
 
 ### -metrics
 calculates metrics based on either totaltime or mount time. Default is totaltime.
+
 `avmlog -report -percent=10 -metrics=totaltime,mount "/users/slawson/Documents/scale.log"`
 
 `avmlog -report -percent=10 -metrics=totaltime "/users/slawson/Documents/scale.log"`
