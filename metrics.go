@@ -38,7 +38,7 @@ func createMetrics(sorter string) {
 	calAvergage(avgAll, sortedReports[:])
 	calAvergage("Avg. of worst "+strconv.Itoa(averageCase), sortedReports[totalSortedReports-averageCase:])
 	calAvergage("Worst case", sortedReports[totalSortedReports-1:])
-
+	sortedReports = nil
 }
 
 func calAvergage(testCase string, sortSlice []*requestReport) {
