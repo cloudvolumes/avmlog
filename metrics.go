@@ -32,6 +32,8 @@ func createMetrics(sorter string) {
 		log.Fatal("No records found for metrics.")
 	}
 	avgAll := "Avg. of all " + strconv.Itoa(totalSortedReports)
+	fmt.Println()
+	fmt.Println(sorter)
 	fmt.Println(compareHeaders)
 	calAvergage("Best case", sortedReports[:1])
 	calAvergage("Avg. of Best "+strconv.Itoa(averageCase), sortedReports[:averageCase])
