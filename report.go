@@ -45,7 +45,9 @@ var (
 	stripRegexp           = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0-9%!-]+)?")
 	requestid             string
 	reports               = map[string]*requestReport{}
-	b                     []byte
+	metricReports         = []*requestReport{}
+
+	b []byte
 )
 
 type requestReport struct {
@@ -172,6 +174,9 @@ func printReport() {
 				v.session,
 				v.mountType))
 
+			if v.route == "user-login" {
+				metricReports = append(metricReports, v)
+			}
 		}
 	}
 }

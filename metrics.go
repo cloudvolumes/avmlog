@@ -14,15 +14,16 @@ var (
 )
 
 func createMetrics(sorter string) {
-	for k, v := range reports {
+	for k, v := range metricReports {
 		if v.route == "user-login" && v.code == "200" && v.mount > 0 {
-			sortedReports = append(sortedReports, reports[k])
+			sortedReports = append(sortedReports, metricReports[k])
 		}
 	}
-	if strings.ToLower(sorter) == "totaltime" {
-		sort.Sort(reportSorter(sortedReports))
+
+	if strings.ToLower(sorter) == "totalrequest" {
+		sort.Stable(reportSorter(sortedReports))
 	} else if strings.ToLower(sorter) == "mount" {
-		sort.Sort(reportMountSorter(sortedReports))
+		sort.Stable(reportMountSorter(sortedReports))
 	}
 
 	totalSortedReports := len(sortedReports)
