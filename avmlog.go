@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -12,8 +11,6 @@ import (
 	"time"
 )
 
-// Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
-// convey the pattern with which to format/parse a given time/string
 const (
 	version    = "v4.0.0 - Elektra"
 	bufferSize = bufio.MaxScanTokenSize
@@ -26,31 +23,14 @@ var (
 )
 
 func main() {
-	hideJobsFlag := flag.Bool("hide_jobs", false, "Hide background jobs")
-	hideSQLFlag := flag.Bool("hide_sql", false, "Hide SQL statements")
-	hideNtlmFlag := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
-	hideDebugFlag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
-	onlyMsgFlag := flag.Bool("only_msg", false, "Output only the message portion")
-	reportFag := flag.Bool("report", false, "Collect request report")
-	fullFlag := flag.Bool("full", false, "Show the full request/job for each found line")
-	neatFlag := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
-	detectErrors := flag.Bool("detect_errors", false, "Detect lines containing known error messages")
-	afterStr := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
-	findStr := flag.String("find", "", "Find lines matching this regexp")
-	hideStr := flag.String("hide", "", "Hide lines matching this regexp")
-	percent := flag.Int("percent", 10, "how many cases (percentage) to use for report metrics")
-	metrics := flag.String("metrics", "totalrequest", "Generate metrics based on which attributes")
-
-	flag.Parse()
-	args := flag.Args()
-
-	timeAfter, err := time.Parse(timeFormat, fmt.Sprintf("[%s UTC]", *afterStr))
-	parseTime := false
+	outputFlags := &parseOptions{}
+	outputFlags.parseFlag()
+	var parseTime bool
 	afterCount := 0
-
+	timeAfter, err := time.Parse(timeFormat, fmt.Sprintf("[%s UTC]", *outputFlags.afterStr))
 	if err != nil {
-		if len(*afterStr) > 0 {
-			msg(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *afterStr))
+		if len(*outputFlags.afterStr) > 0 {
+			msg(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *outputFlags.afterStr))
 			usage()
 			os.Exit(2)
 		}
@@ -58,29 +38,15 @@ func main() {
 		parseTime = true
 	}
 
-	if len(args) < 1 {
-		usage()
-		os.Exit(2)
-	}
+	outputFlags.isNeatFlag()
+	outputFlags.printSelectedFlags()
 
-	if *neatFlag {
-		*hideJobsFlag = true
-		*hideSQLFlag = true
-		*hideNtlmFlag = true
-	}
-
-	msg(fmt.Sprintf("Show full requests/jobs: %t", *fullFlag))
-	msg(fmt.Sprintf("Show background job lines: %t", !*hideJobsFlag))
-	msg(fmt.Sprintf("Show SQL lines: %t", !*hideSQLFlag))
-	msg(fmt.Sprintf("Show NTLM lines: %t", !*hideNtlmFlag))
-	msg(fmt.Sprintf("Show DEBUG lines: %t", !*hideDebugFlag))
-	msg(fmt.Sprintf("Show lines after: %s", *afterStr))
-
-	filename := args[0]
+	filename := outputFlags.fileName
 	msg(fmt.Sprintf("Opening file: %s", filename))
-	if *reportFag {
-		percentReport = *percent
-		metricReport = *metrics
+
+	if *outputFlags.reportFlag {
+		percentReport = *outputFlags.percent
+		metricReport = *outputFlags.metrics
 
 		processReport()
 	}
@@ -93,17 +59,17 @@ func main() {
 
 	reader = file
 
-	if *detectErrors {
-		*findStr = "( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )"
+	if *outputFlags.detectErrors {
+		*outputFlags.findStr = "( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )"
 	}
 
-	findRegexp, err := regexp.Compile(*findStr)
-	hasFind := len(*findStr) > 0 && err == nil
+	findRegexp, err := regexp.Compile(*outputFlags.findStr)
+	hasFind := len(*outputFlags.findStr) > 0 && err == nil
 
-	hideRegexp, err := regexp.Compile(*hideStr)
-	hasHide := len(*hideStr) > 0 && err == nil
+	hideRegexp, err := regexp.Compile(*outputFlags.hideStr)
+	hasHide := len(*outputFlags.hideStr) > 0 && err == nil
 
-	if *reportFag || (*fullFlag && hasFind) {
+	if *outputFlags.reportFlag || (*outputFlags.fullFlag && hasFind) {
 		if isGzip {
 			// for some reason if you create a reader but don't use it,
 			// an error is given when the output reader is created below
@@ -158,7 +124,7 @@ func main() {
 
 				if lineAfter {
 					if requestID := extractRequestID(line); len(requestID) > 1 {
-						if !*hideJobsFlag || !isJob(requestID) {
+						if !*outputFlags.hideJobsFlag || !isJob(requestID) {
 							requestIds = append(requestIds, requestID)
 						}
 					}
@@ -183,11 +149,11 @@ func main() {
 			msg(fmt.Sprintf("Warning: truncated %d long lines that exceeded %d bytes", longLines, bufferSize))
 		}
 
-		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(requestIds), *findStr))
+		msg(fmt.Sprintf("Found %d lines matching \"%s\"", len(requestIds), *outputFlags.findStr))
 		uniqueMap = generateRequestIDMap(&requestIds)
 
 		if len(uniqueMap) < 1 {
-			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", *findStr))
+			msg(fmt.Sprintf("Found 0 request identifiers for \"%s\"", *outputFlags.findStr))
 			os.Exit(2)
 		}
 
@@ -255,7 +221,7 @@ func main() {
 			if hasRequests {
 				if len(requestID) > 0 {
 					if uniqueMap[requestID] {
-						if *hideJobsFlag && isJob(requestID) {
+						if *outputFlags.hideJobsFlag && isJob(requestID) {
 							output = false
 						} else {
 							inRequest = true
@@ -276,11 +242,11 @@ func main() {
 		}
 
 		if output {
-			if *hideSQLFlag && sqlRegexp.MatchString(line) {
+			if *outputFlags.hideSQLFlag && sqlRegexp.MatchString(line) {
 				output = false
-			} else if *hideNtlmFlag && ntlmRegexp.MatchString(line) {
+			} else if *outputFlags.hideNtlmFlag && ntlmRegexp.MatchString(line) {
 				output = false
-			} else if *hideDebugFlag && debugRegexp.MatchString(line) {
+			} else if *outputFlags.hideDebugFlag && debugRegexp.MatchString(line) {
 				output = false
 			} else if hasHide && hideRegexp.MatchString(line) {
 				output = false
@@ -288,7 +254,7 @@ func main() {
 		}
 
 		if output {
-			if *onlyMsgFlag {
+			if *outputFlags.onlyMsgFlag {
 				if message_match := messageRegexp.FindStringSubmatch(line); len(message_match) > 1 {
 					fmt.Println(stripRegexp.ReplaceAllString(strings.TrimSpace(message_match[1]), "***"))
 				}

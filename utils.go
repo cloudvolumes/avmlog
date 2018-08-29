@@ -37,6 +37,13 @@ func checkError(message string, err error) {
 	}
 }
 
+func checkArgs(args []string) {
+	if len(args) < 1 {
+		usage()
+		os.Exit(2)
+	}
+}
+
 func timeDifference(a string, b string) float64 {
 	diff := 0.0
 	if a != "" && b != "" {
