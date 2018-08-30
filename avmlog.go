@@ -44,6 +44,7 @@ func main() {
 		metricReport = *outputFlags.metrics
 
 		processReport()
+	} else {
+		searchStr(outputFlags, filename)
 	}
-	searchStr(outputFlags, filename)
 }

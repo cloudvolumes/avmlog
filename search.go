@@ -20,9 +20,8 @@ func searchStr(outputFlags *parseOptions, filename string) {
 	if len(*outputFlags.afterStr) < 0 {
 		parseTime = true
 	}
-	isGzip := isGzip(filename)
 	fileSize := float64(fileSize(file))
-	showPercent := !isGzip
+	showPercent := true
 
 	reader = file
 
@@ -36,15 +35,7 @@ func searchStr(outputFlags *parseOptions, filename string) {
 	hideRegexp, err := regexp.Compile(*outputFlags.hideStr)
 	hasHide := len(*outputFlags.hideStr) > 0 && err == nil
 
-	if *outputFlags.reportFlag || (*outputFlags.fullFlag && hasFind) {
-		if isGzip {
-			// for some reason if you create a reader but don't use it,
-			// an error is given when the output reader is created below
-			parseGzReader := getGzipReader(file)
-			defer parseGzReader.Close()
-
-			reader = parseGzReader
-		}
+	if *outputFlags.fullFlag && hasFind {
 
 		lineCount := 0
 		lineAfter := !parseTime // if not parsing time, then all lines are valid
@@ -127,13 +118,6 @@ func searchStr(outputFlags *parseOptions, filename string) {
 		rewindFile(file)
 	} else {
 		msg("Not printing -full requests, skipping request collection phase")
-	}
-
-	if isGzip {
-		outputGZReader := getGzipReader(file)
-		defer outputGZReader.Close()
-
-		reader = outputGZReader
 	}
 
 	showPercent = readSize > int64(0)
@@ -222,8 +206,8 @@ func searchStr(outputFlags *parseOptions, filename string) {
 
 		if output {
 			if *outputFlags.onlyMsgFlag {
-				if message_match := messageRegexp.FindStringSubmatch(line); len(message_match) > 1 {
-					fmt.Println(stripRegexp.ReplaceAllString(strings.TrimSpace(message_match[1]), "***"))
+				if messageMatch := messageRegexp.FindStringSubmatch(line); len(messageMatch) > 1 {
+					fmt.Println(stripRegexp.ReplaceAllString(strings.TrimSpace(messageMatch[1]), "***"))
 				}
 			} else {
 				fmt.Println(line)

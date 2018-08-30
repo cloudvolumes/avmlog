@@ -44,5 +44,4 @@ func processReport() {
 	if len(base) > 0 {
 		os.RemoveAll("output")
 	}
-	os.Exit(0)
 }
