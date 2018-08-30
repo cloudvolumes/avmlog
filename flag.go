@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 )
 
 type parseOptions struct {
@@ -21,6 +22,7 @@ type parseOptions struct {
 	percent       *int
 	metrics       *string
 	fileName      string
+	timeAfter     *time.Time
 }
 
 func (f *parseOptions) parseFlag() {
@@ -38,6 +40,7 @@ func (f *parseOptions) parseFlag() {
 	f.hideStr = flag.String("hide", "", "Hide lines matching this regexp")
 	f.percent = flag.Int("percent", 10, "how many cases (percentage) to use for report metrics")
 	f.metrics = flag.String("metrics", "totalrequest", "Generate metrics based on which attributes")
+
 	flag.Parse()
 	args := flag.Args()
 	checkArgs(args)
