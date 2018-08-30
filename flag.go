@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
 )
 
 type parseOptions struct {
@@ -22,7 +21,6 @@ type parseOptions struct {
 	percent       *int
 	metrics       *string
 	fileName      string
-	timeAfter     *time.Time
 }
 
 func (f *parseOptions) parseFlag() {

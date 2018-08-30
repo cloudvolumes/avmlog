@@ -8,18 +8,27 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func searchStr(outputFlags *parseOptions, filename string) {
 
+	file, base := getLogFile(filename)
 	var parseTime bool
 	var afterCount int
-	file := openFile(filename)
 	defer file.Close()
 
-	if len(*outputFlags.afterStr) < 0 {
+	timeAfter, err := time.Parse(timeFormat, fmt.Sprintf("[%s UTC]", *outputFlags.afterStr))
+	if err != nil {
+		if len(*outputFlags.afterStr) > 0 {
+			msg(fmt.Sprintf("Invalid time format \"%s\" - Must be YYYY-MM-DD HH::II::SS", *outputFlags.afterStr))
+			usage()
+			os.Exit(2)
+		}
+	} else {
 		parseTime = true
 	}
+
 	fileSize := float64(fileSize(file))
 	showPercent := true
 
@@ -73,7 +82,7 @@ func searchStr(outputFlags *parseOptions, filename string) {
 
 				if !lineAfter {
 					if timestamp := extractTimestamp(line); len(timestamp) > 1 {
-						if isAfterTime(timestamp, outputFlags.timeAfter) {
+						if isAfterTime(timestamp, &timeAfter) {
 							lineAfter = true
 							afterCount = lineCount
 						}
@@ -158,7 +167,7 @@ func searchStr(outputFlags *parseOptions, filename string) {
 
 			if afterCount < lineCount {
 				if timestamp := extractTimestamp(line); len(timestamp) > 1 {
-					if isAfterTime(timestamp, outputFlags.timeAfter) {
+					if isAfterTime(timestamp, &timeAfter) {
 						msg("\n") // empty line
 						lineAfter = true
 					}
@@ -213,5 +222,9 @@ func searchStr(outputFlags *parseOptions, filename string) {
 				fmt.Println(line)
 			}
 		}
+	}
+
+	if len(base) > 0 {
+		os.RemoveAll("output")
 	}
 }
