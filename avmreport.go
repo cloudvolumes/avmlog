@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -16,23 +15,9 @@ var (
 	metricReport  string
 )
 
-func processReport() {
+func processReport(filename string) {
 
-	args := flag.Args()
-	base := checkIfZip(args[0])
-	if len(base) > 0 {
-		path = "production"
-		filenames, err := unzip(args[0], "output")
-		checkError("Unable to unzip", err)
-		sort.Sort(sort.StringSlice(filenames))
-		createOneLogFile(filenames)
-		file, err = os.Open("output/production.log")
-		checkError("Can not open file", err)
-
-	} else {
-		file, err = os.Open(args[0])
-		checkError("Can not open file", err)
-	}
+	file, base := getLogFile(filename)
 	b, err = ioutil.ReadAll(file)
 	extractKeyFields()
 	printReport()
@@ -44,4 +29,23 @@ func processReport() {
 	if len(base) > 0 {
 		os.RemoveAll("output")
 	}
+}
+
+func getLogFile(filename string) (*os.File, string) {
+	base := checkIfZip(filename)
+	if len(base) > 0 {
+		path = "production"
+		filenames, err := unzip(filename, "output")
+		checkError("Unable to unzip", err)
+		sort.Sort(sort.StringSlice(filenames))
+		createOneLogFile(filenames)
+		file, err = os.Open("output/production.log")
+		checkError("Can not open file", err)
+
+	} else {
+		file, err = os.Open(filename)
+		checkError("Can not open file", err)
+	}
+
+	return file, base
 }

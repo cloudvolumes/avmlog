@@ -37,13 +37,13 @@ func main() {
 	outputFlags.printSelectedFlags()
 
 	filename := outputFlags.fileName
-	msg(fmt.Sprintf("Opening file: %s", filename))
+	//msg(fmt.Sprintf("Opening file: %s", filename))
 
 	if *outputFlags.reportFlag {
 		percentReport = *outputFlags.percent
 		metricReport = *outputFlags.metrics
 
-		processReport()
+		processReport(filename)
 	} else {
 		searchStr(outputFlags, filename)
 	}
