@@ -29,21 +29,25 @@ These are available under the release section on github: https://github.com/clou
 
 ## Usage
 
-Set operating flags and provide a AppVolumes Manager log file. Use gzipped files to save space.
+Set operating flags and provide a AppVolumes Manager log file.
 
 `avmlog [flags] [filename]`
 
 Find the full requests containing "apvuser2599" without background jobs, SQL, or NTLM lines:
 
-`avmlog -find "apvuser2599" -full -neat ~/Documents/scale.log.gz`
+`avmlog -find "apvuser2599" -full -neat ~/Documents/scale.log`
 
-Find lines containing "apvuser2599" after "2015-10-01 01:11:32" without SQL lines in a gzipped log file :
+Find lines containing "apvuser2599" after "2015-10-01 01:11:32" without SQL lines in a log file :
 
-`avmlog -find="apvuser03734" -after="2015-10-01 01:11:32" -hide_sql "/users/slawson/Documents/scale.log.gz"`
+`avmlog -find="apvuser03734" -after="2015-10-01 01:11:32" -hide_sql "/users/slawson/Documents/scale.log"`
 
 Find lines containing a computer or user name:
 
-`avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log.gz"`
+`avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log"`
+
+Find lines containing a computer or user name in zip folder :
+
+`avmlog -find="apvuser03734|av-pd1-pl8-0787" -after="2015-10-01 01:11:32" "/users/slawson/Documents/scale.zip"`
 
 Generate report for all the production files included in zip:
 
