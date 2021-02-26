@@ -154,5 +154,12 @@ From: [workspace]/src/github.com/[your-account]/avmlog
 - go-windows-386 build
 - go-linux-386 build -o avmlogx 
 
+### Regex Debugging
+https://regexr.com/
+Backslashes need triple-escape because their in double-quotes
+in .go: " INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)\\?"
+regexr: INFO Started ([A-Z]+) \"\/([-a-zA-Z0-9_/]+)(\?|\")
+
+### Release Names
 Release names go in order alphabetically using the most liked name here:
 http://www.superherodb.com/characters/
