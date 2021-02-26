@@ -144,15 +144,15 @@ Things someone can do to improve this:
 
 ## Developer notes
 
+### Compiling
 - Download go: https://golang.org/dl/
 - Getting started: https://golang.org/doc/install
-- Cross-platform compilation: git clone git://github.com/davecheney/golang-crosscompile.git
-- source golang-crosscompile/crosscompile.bash
+- https://dave.cheney.net/2015/08/22/cross-compilation-with-go-1-5
 
 From: [workspace]/src/github.com/[your-account]/avmlog
-- go build
-- go-windows-386 build
-- go-linux-386 build -o avmlogx 
+- go build 
+- env GOOS=windows GOARCH=amd64 go build -v avmlog.go
+- env GOOS=linux GOARCH=amd64 go build -v -o avmlogx avmlog.go
 
 ### Regex Debugging
 https://regexr.com/
