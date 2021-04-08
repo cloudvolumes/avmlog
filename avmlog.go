@@ -75,25 +75,25 @@ type request_report struct {
 }
 
 func main() {
-	hide_jobs_flag := flag.Bool("hide_jobs", false, "Hide background jobs")
-	hide_sql_flag := flag.Bool("hide_sql", false, "Hide SQL statements")
-	hide_ntlm_flag := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
+	hide_jobs_flag  := flag.Bool("hide_jobs", false, "Hide background jobs")
+	hide_sql_flag   := flag.Bool("hide_sql", false, "Hide SQL statements")
+	hide_ntlm_flag  := flag.Bool("hide_ntlm", false, "Hide NTLM lines")
 	hide_debug_flag := flag.Bool("hide_debug", false, "Hide DEBUG lines")
-	only_msg_flag := flag.Bool("only_msg", false, "Output only the message portion")
-	report_flag := flag.Bool("report", false, "Collect request report")
-	full_flag := flag.Bool("full", false, "Show the full request/job for each found line")
-	neat_flag := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
-	detect_errors := flag.Bool("detect_errors", false, "Detect lines containing known error messages")
-	after_str := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
-	find_str := flag.String("find", "", "Find lines matching this regexp")
-	hide_str := flag.String("hide", "", "Hide lines matching this regexp")
+	only_msg_flag   := flag.Bool("only_msg", false, "Output only the message portion")
+	report_flag     := flag.Bool("report", false, "Collect request report")
+	full_flag       := flag.Bool("full", false, "Show the full request/job for each found line")
+	neat_flag       := flag.Bool("neat", false, "Hide clutter - equivalent to -hide_jobs -hide_sql -hide_ntlm")
+	detect_errors   := flag.Bool("detect_errors", false, "Detect lines containing known error messages")
+	after_str       := flag.String("after", "", "Show logs after this time (YYYY-MM-DD HH:II::SS")
+	find_str        := flag.String("find", "", "Find lines matching this regexp")
+	hide_str        := flag.String("hide", "", "Hide lines matching this regexp")
 
 	flag.Parse()
 	args := flag.Args()
 
 	time_after, err := time.Parse(TIME_LAYOUT, fmt.Sprintf("[%s UTC]", *after_str))
-	parse_time := false
-	after_count := 0
+	parse_time      := false
+	after_count     := 0
 
 	if err != nil {
 		if len(*after_str) > 0 {
@@ -129,24 +129,27 @@ func main() {
 	file := openFile(filename)
 	defer file.Close()
 
-	is_gzip := isGzip(filename)
-	file_size := float64(fileSize(file))
+	is_gzip      := isGzip(filename)
+	file_size    := float64(fileSize(file))
 	show_percent := !is_gzip
-	var read_size int64 = 0
 
-	var reader io.Reader = file
-	var unique_map map[string]bool
-	var reports = map[string]*request_report{}
+	var (
+        read_size int64  = 0
+        reader io.Reader = file
+        reports          = map[string]*request_report{}
+
+        unique_map map[string]bool
+    )
 
 	if *detect_errors {
 		*find_str = "( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )"
 	}
 
 	find_regexp, err := regexp.Compile(*find_str)
-	has_find := len(*find_str) > 0 && err == nil
+	has_find         := len(*find_str) > 0 && err == nil
 
 	hide_regexp, err := regexp.Compile(*hide_str)
-	has_hide := len(*hide_str) > 0 && err == nil
+	has_hide         := len(*hide_str) > 0 && err == nil
 
 	if *report_flag || (*full_flag && has_find) {
 		if is_gzip {
@@ -158,12 +161,12 @@ func main() {
 			reader = parse_gz_reader
 		}
 
-		line_count := 0
-		line_after := !parse_time // if not parsing time, then all lines are valid
-		request_ids := make([]string, 0)
-		adapter_cnt := int64(0)
+		line_count   := 0
+		line_after   := !parse_time // if not parsing time, then all lines are valid
+		request_ids  := make([]string, 0)
+		adapter_cnt  := int64(0)
 		partial_line := false
-		long_lines := 0
+		long_lines   := 0
 
 		reader := bufio.NewReaderSize(reader, BUFFER_SIZE)
 
@@ -354,12 +357,12 @@ func main() {
 	}
 
 	show_percent = read_size > int64(0)
-	read_size = 0
+	read_size    = 0
 
-	line_count := 0
-	line_after := !parse_time // if not parsing time, then all lines are valid
+	line_count   := 0
+	line_after   := !parse_time // if not parsing time, then all lines are valid
 	has_requests := len(unique_map) > 0
-	in_request := false
+	in_request   := false
 
 	output_reader := bufio.NewReaderSize(reader, BUFFER_SIZE)
 
