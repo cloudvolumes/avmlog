@@ -45,6 +45,20 @@ Find lines containing a computer or user name:
 
 `avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log.gz"`
 
+Get log messages without timestamps and numbers so similar messages can be sorted and counted
+
+`avmlog -full -find='Some!20!AppStack' -neat -only_msg scale.log.gz | sort -f | uniq -ic | sort`
+
+> 386 RvSphere: Time taken to pop from wait queue *** milliseconds
+> 
+> 441 RvSphere: Preparing to reconfigure VM WSUAP***" (***) <running>
+>
+> 794 RvSphere: 		Task ReconfigVM_Task completed successfully
+>
+> 797 RvSphere: 	ReconfigVM_Task task: task***
+>
+> 806 RvSphere: 		Task total time: ***.*** (execution time ***.***)
+
 
 ### Flags:
 
@@ -159,6 +173,9 @@ https://regexr.com/
 Backslashes need triple-escape because their in double-quotes
 in .go: " INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)\\?"
 regexr: INFO Started ([A-Z]+) \"\/([-a-zA-Z0-9_/]+)(\?|\")
+
+Single-quotes can be used to avoid escaping backslashes
+Square brackets have to be escaped when using -find even with single-quotes
 
 ### Release Names
 Release names go in order alphabetically using the most liked name here:
