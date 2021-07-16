@@ -2,16 +2,16 @@ package main
 
 import (
 	"bufio"
+	"compress/gzip"
+	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
-	"io"
 	"regexp"
-	"strings"
-	"flag"
-	"time"
 	"strconv"
-	"compress/gzip"
+	"strings"
+	"time"
 )
 
 // Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
@@ -20,7 +20,7 @@ const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
 const VERSION = "v4.0.3 - Ermac"
 const BUFFER_SIZE = bufio.MaxScanTokenSize
 
-const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A";
+const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A"
 
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
@@ -43,31 +43,31 @@ var vc_adapter_regexp  *regexp.Regexp = regexp.MustCompile("Acquired 'vcenter' a
 var esx_adapter_regexp *regexp.Regexp = regexp.MustCompile("Acquired 'esx' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
 
 type mount_report struct {
-	queue bool
-	mount_beg string
-	mount_end string
+	queue        bool
+	mount_beg    string
+	mount_end    string
 	mount_result string
-	ms_mount float64
+	ms_mount     float64
 }
 
 type request_report struct {
-	step int
-	time_beg string
-	time_end string
-	mounts []*mount_report
-	method string
-	route string
-	computer string
-	user string
-	code string
-	ms_request float64
-	ms_garbage float64
-	ms_db float64
-	ms_view float64
+	step          int
+	time_beg      string
+	time_end      string
+	mounts        []*mount_report
+	method        string
+	route         string
+	computer      string
+	user          string
+	code          string
+	ms_request    float64
+	ms_garbage    float64
+	ms_db         float64
+	ms_view       float64
 	percent_mount int
-	errors int64
-	vc_adapters int64
-	esx_adapters int64
+	errors        int64
+	vc_adapters   int64
+	esx_adapters  int64
 }
 
 func main() {
@@ -88,8 +88,8 @@ func main() {
 	args := flag.Args()
 
 	time_after, err := time.Parse(TIME_LAYOUT, fmt.Sprintf("[%s UTC]", *after_str))
-	parse_time      := false
-	after_count     := 0
+	parse_time := false
+	after_count := 0
 
 	if err != nil {
 		if len(*after_str) > 0 {
@@ -131,11 +131,11 @@ func main() {
 	var read_size int64 = 0
 
 	var reader io.Reader = file
-	var unique_map map[string]bool;
-	var reports = map[string]*request_report{};
+	var unique_map map[string]bool
+	var reports = map[string]*request_report{}
 
-	if ( *detect_errors ) {
-		*find_str = "( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )";
+	if *detect_errors {
+		*find_str = "( ERROR | Exception | undefined | Failed | NilClass | Unable | failed )"
 	}
 
 	find_regexp, err := regexp.Compile(*find_str)
@@ -184,9 +184,9 @@ func main() {
 					long_lines += 1
 				}
 			} else {
-				partial_line = false 
+				partial_line = false
 			}
-			
+
 			if find_regexp.MatchString(line) {
 
 				if !line_after {
@@ -208,10 +208,14 @@ func main() {
 											report.errors += 1
 										} else if vc_adapter_match := vc_adapter_regexp.FindStringSubmatch(line); len(vc_adapter_match) > 1 {
 											adapter_cnt, _ = strconv.ParseInt(vc_adapter_match[1], 10, 64)
-											if adapter_cnt > report.vc_adapters { report.vc_adapters = adapter_cnt }
+											if adapter_cnt > report.vc_adapters {
+												report.vc_adapters = adapter_cnt
+											}
 										} else if esx_adapter_match := esx_adapter_regexp.FindStringSubmatch(line); len(esx_adapter_match) > 1 {
 											adapter_cnt, _ = strconv.ParseInt(esx_adapter_match[1], 10, 64)
-											if adapter_cnt > report.esx_adapters { report.esx_adapters = adapter_cnt }
+											if adapter_cnt > report.esx_adapters {
+												report.esx_adapters = adapter_cnt
+											}
 										} else if reconfig_match := reconfig_regexp.FindStringSubmatch(line); len(reconfig_match) > 1 {
 											if reconfig_match[1] == "execute_task" {
 												report.step++
@@ -220,7 +224,7 @@ func main() {
 												if report.step >= 0 {
 													if mount := report.mounts[report.step]; mount != nil {
 														if mount.queue {
-															mount.mount_end = timestamp;
+															mount.mount_end = timestamp
 															if result_match := result_regexp.FindStringSubmatch(line); len(result_match) > 1 {
 																mount.mount_result = result_match[1]
 															}
@@ -234,8 +238,8 @@ func main() {
 												}
 											}
 										} else if complete_match := complete_regexp.FindStringSubmatch(line); len(complete_match) > 1 {
-											report.time_end = timestamp;
-											report.code     = complete_match[1];
+											report.time_end = timestamp
+											report.code = complete_match[1]
 
 											report.ms_request, _ = strconv.ParseFloat(complete_match[2], 64)
 											report.ms_view, _    = strconv.ParseFloat(complete_match[3], 64)
@@ -248,7 +252,7 @@ func main() {
 											report.method = route_match[1]
 											report.route = route_match[2]
 										} else {
-										  msg("no matching route for new report! " + line);
+											msg("no matching route for new report! " + line)
 										}
 
 										if user_match := user_regexp.FindStringSubmatch(line); len(user_match) > 1 {
@@ -272,9 +276,9 @@ func main() {
 
 			read_size += int64(len(line))
 
-			if line_count++; line_count % 20000 == 0 {
+			if line_count++; line_count%20000 == 0 {
 				if show_percent {
-					showPercent(line_count, float64(read_size) / file_size, line_after, len(request_ids))
+					showPercent(line_count, float64(read_size)/file_size, line_after, len(request_ids))
 				} else {
 					showBytes(line_count, float64(read_size), line_after, len(request_ids))
 				}
@@ -282,9 +286,9 @@ func main() {
 		}
 
 		file_size = float64(read_size) // set the filesize to the total known size
-		msg("") // empty line
+		msg("")                        // empty line
 
-		if ( long_lines > 0 ) {
+		if long_lines > 0 {
 			msg(fmt.Sprintf("Warning: truncated %d long lines that exceeded %d bytes", long_lines, BUFFER_SIZE))
 		}
 
@@ -313,13 +317,13 @@ func main() {
 						v.ms_db,
 						v.ms_view,
 						ms_mount,
-						(ms_mount/v.ms_request) * 100,
+						(ms_mount/v.ms_request)*100,
 						len(v.mounts),
 						v.errors,
 						v.vc_adapters,
 						v.esx_adapters))
 				} else {
-				  msg("missing method or time_end for " + k);
+					msg("missing method or time_end for " + k)
 				}
 			}
 			return
@@ -353,7 +357,7 @@ func main() {
 	has_requests := len(unique_map) > 0
 	in_request := false
 
-	output_reader := bufio.NewReaderSize(reader, BUFFER_SIZE);
+	output_reader := bufio.NewReaderSize(reader, BUFFER_SIZE)
 
 	for {
 		bytes, _, err := output_reader.ReadLine()
@@ -373,9 +377,9 @@ func main() {
 		if !line_after {
 			read_size += int64(len(line))
 
-			if line_count++; line_count % 5000 == 0 {
+			if line_count++; line_count%5000 == 0 {
 				if show_percent {
-					fmt.Fprintf(os.Stderr, "Reading: %.2f%%\r", (float64(read_size) / file_size) * 100)
+					fmt.Fprintf(os.Stderr, "Reading: %.2f%%\r", (float64(read_size)/file_size)*100)
 				} else {
 					fmt.Fprintf(os.Stderr, "Reading: %d lines, %0.3f GB\r", line_count, float64(read_size)/1024/1024/1024)
 				}
@@ -430,7 +434,7 @@ func main() {
 		}
 
 		if output {
-			if ( *only_msg_flag ) {
+			if *only_msg_flag {
 				if message_match := message_regexp.FindStringSubmatch(line); len(message_match) > 1 {
 					fmt.Println(strip_regexp.ReplaceAllString(strings.TrimSpace(message_match[1]), "***"))
 				}
@@ -489,7 +493,7 @@ func generateRequestIdMap(request_ids *[]string) map[string]bool {
 		unique_map[x] = true
 	}
 
-	for k, _ := range unique_map {
+	for k := range unique_map {
 		msg(fmt.Sprintf("Request ID: %s", k))
 	}
 
@@ -508,11 +512,11 @@ func fileSize(file *os.File) int64 {
 	if fi, err := file.Stat(); err != nil {
 		msg("Unable to determine file size")
 
-		return 1;
+		return 1
 	} else {
 		msg(fmt.Sprintf("The file is %d bytes long", fi.Size()))
 
-		return fi.Size();
+		return fi.Size()
 	}
 }
 
@@ -523,14 +527,14 @@ func isGzip(filename string) bool {
 func getGzipReader(file *os.File) *gzip.Reader {
 	gz_reader, err := gzip.NewReader(file)
 	if err != nil {
-	log.Fatal(err)
+		log.Fatal(err)
 	}
 
 	return gz_reader
 }
 
 func rewindFile(file *os.File) {
-	file.Seek(0, 0)  // go back to the top (rewind)
+	file.Seek(0, 0) // go back to the top (rewind)
 }
 
 func msg(output string) {
@@ -542,7 +546,7 @@ func showPercent(line_count int, position float64, after bool, matches int) {
 		os.Stderr,
 		"Reading: %d lines, %.2f%% (after: %v, matches: %d)\r",
 		line_count,
-		position * 100,
+		position*100,
 		after,
 		matches)
 }
@@ -552,7 +556,7 @@ func showBytes(line_count int, position float64, after bool, matches int) {
 		os.Stderr,
 		"Reading: %d lines, %0.3f GB (after: %v, matches: %d)\r",
 		line_count,
-		position / 1024 / 1024 / 1024,
+		position/1024/1024/1024,
 		after,
 		matches)
 }
