@@ -132,6 +132,11 @@ Generates a comma-separated report containing one line for each request
 
 `avmlog -report "/users/slawson/Documents/scale.log"`
 
+### Mac
+OSX will prevent you from running the binary after download because it is not signed, you can fix that by right-clicking it and choosing "Open". That will give you the dialog to "Open Anyway". 
+
+Alternatively you can run this command:
+`$ xattr -d com.apple.quarantine /path/to/avmlog`
 
 ## TODO
 
