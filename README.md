@@ -45,9 +45,11 @@ Find lines containing a computer or user name:
 
 `avmlog -find="apvuser03734|av-pd1-pl8-0787" "/users/slawson/Documents/scale.log.gz"`
 
-Get log messages without timestamps and numbers so similar messages can be sorted and counted
+Get log messages without timestamps and numbers so similar messages can be sorted and counted:
 
-`avmlog -full -find='Some!20!AppStack' -neat -only_msg scale.log.gz | sort -f | uniq -ic | sort`
+`avmlog -full -find='Some!20!AppStack' -neat -only_msg scale.log.gz | sort -f | uniq -ic | sort -n`
+
+sort -f = case-insensitive, uniq -ic = case-insensitive, add count, sort -n = natural number sort
 
 > 386 RvSphere: Time taken to pop from wait queue *** milliseconds
 > 
