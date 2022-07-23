@@ -174,6 +174,7 @@ From: [workspace]/src/github.com/[your-account]/avmlog
 - go build 
 - env GOOS=windows GOARCH=amd64 go build -v avmlog.go
 - env GOOS=linux GOARCH=amd64 go build -v -o avmlogx avmlog.go
+- env GOOS=darwin GOARCH=arm64 go build -v -o avmlogm avmlog.go
 
 ### Regex Debugging
 https://regexr.com/

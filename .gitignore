@@ -29,6 +29,7 @@ _testmain.go
 .DS_Store
 avmlog
 avmlogx
+avmlogm
 avmlog.exe
 
 errors.txt
