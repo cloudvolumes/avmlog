@@ -17,7 +17,7 @@ import (
 // Time layouts must use the reference time `Mon Jan 2 15:04:05 MST 2006` to
 // convey the pattern with which to format/parse a given time/string
 const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
-const VERSION = "v4.0.3 - Ermac"
+const VERSION = "v4.0.4 - Etrigan"
 const BUFFER_SIZE = bufio.MaxScanTokenSize
 
 const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A"
