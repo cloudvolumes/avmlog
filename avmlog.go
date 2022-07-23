@@ -188,7 +188,6 @@ func main() {
 			}
 
 			if find_regexp.MatchString(line) {
-
 				if !line_after {
 					if timestamp := extractTimestamp(line); len(timestamp) > 1 {
 						if isAfterTime(timestamp, &time_after) {
@@ -396,6 +395,9 @@ func main() {
 		}
 
 		if line_after {
+			//TODO: Check if the line has a second timestamp in it and cut that off
+			//That will handle broken log lines, make that an option? Report number of occurrences?
+
 			request_id := extractRequestId(line)
 
 			if has_requests {
