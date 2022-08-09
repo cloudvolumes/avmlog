@@ -190,3 +190,4 @@ Square brackets have to be escaped when using -find even with single-quotes
 ### Release Names
 Release names go in order alphabetically using the most liked name here:
 http://www.superherodb.com/characters/
+https://www.superherodb.com/characters/?page_nr=42
