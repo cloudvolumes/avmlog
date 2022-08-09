@@ -39,8 +39,8 @@ var strip_regexp     *regexp.Regexp = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0
 var computer_regexp  *regexp.Regexp = regexp.MustCompile("workstation=(.*?)&")
 var user_regexp      *regexp.Regexp = regexp.MustCompile("username=(.*?)&")
 
-var vc_adapter_regexp  *regexp.Regexp = regexp.MustCompile("Acquired 'vcenter' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
-var esx_adapter_regexp *regexp.Regexp = regexp.MustCompile("Acquired 'esx' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
+var vc_adapter_regexp  *regexp.Regexp = regexp.MustCompile("Acquired ['|\"]vcenter['|\"] adapter ([0-9]+) of ([0-9]+) for ['|\"].*?['|\"] in ([0-9.]+)")
+var esx_adapter_regexp *regexp.Regexp = regexp.MustCompile("Acquired ['|\"]esx['|\"] adapter ([0-9]+) of ([0-9]+) for ['|\"].*?['|\"] in ([0-9.]+)")
 
 var vc_connect_regexp    *regexp.Regexp = regexp.MustCompile(" Connection to vSphere at ")
 var vc_disconnect_regexp *regexp.Regexp = regexp.MustCompile(" Disconnecting from vSphere ")
