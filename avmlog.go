@@ -34,6 +34,7 @@ var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) [A
 var reconfig_regexp  *regexp.Regexp = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
 var result_regexp    *regexp.Regexp = regexp.MustCompile(" with result \\\"([a-z]+)\\\"")
 var route_regexp     *regexp.Regexp = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/(\\S+?)?(\\?|\\\")")
+var slash_regexp     *regexp.Regexp = regexp.MustCompile("\\\"\\/(\\S+?)?(\\?|\\\")")
 var message_regexp   *regexp.Regexp = regexp.MustCompile(" P[0-9]+.*? [A-Z]+ (.*)")
 var strip_regexp     *regexp.Regexp = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0-9%!-]+)?")
 var computer_regexp  *regexp.Regexp = regexp.MustCompile("workstation=(.*?)&")
@@ -260,7 +261,13 @@ func main() {
 											report.method = route_match[1]
 											report.route = route_match[2]
 										} else {
-											msg("no matching route for new report! " + line)
+											report.method = "?"
+											report.route = "?"
+											if slash_match := slash_regexp.FindStringSubmatch(line); len(slash_match) > 1 {
+												report.route = slash_match[1]
+											} else {
+												msg("no matching route for new report! " + line)
+											}
 										}
 
 										if user_match := user_regexp.FindStringSubmatch(line); len(user_match) > 1 {
