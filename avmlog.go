@@ -20,7 +20,7 @@ const TIME_LAYOUT string = "[2006-01-02 15:04:05 MST]"
 const VERSION = "v4.0.4 - Etrigan"
 const BUFFER_SIZE = bufio.MaxScanTokenSize
 
-const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A"
+const REPORT_HEADERS = "RequestID, Method, URL, Computer, User, Request Result, Request Start, Request End, Request Time (ms), Db Time (ms), View Time (ms), Mount Time (ms), % Request Mounting, Mount Result, Errors, ESX-A, VC-A, Con+, Con-"
 
 var job_regexp       *regexp.Regexp = regexp.MustCompile("^P[0-9]+(DJ|PW)[0-9]*")
 var timestamp_regexp *regexp.Regexp = regexp.MustCompile("^(\\[[0-9-]+ [0-9:]+ UTC\\])")
@@ -41,6 +41,9 @@ var user_regexp      *regexp.Regexp = regexp.MustCompile("username=(.*?)&")
 
 var vc_adapter_regexp  *regexp.Regexp = regexp.MustCompile("Acquired 'vcenter' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
 var esx_adapter_regexp *regexp.Regexp = regexp.MustCompile("Acquired 'esx' adapter ([0-9]+) of ([0-9]+) for '.*?' in ([0-9.]+)")
+
+var vc_connect_regexp    *regexp.Regexp = regexp.MustCompile(" Connection to vSphere at ")
+var vc_disconnect_regexp *regexp.Regexp = regexp.MustCompile(" Disconnecting from vSphere ")
 
 type mount_report struct {
 	queue        bool
@@ -68,6 +71,8 @@ type request_report struct {
 	errors        int64
 	vc_adapters   int64
 	esx_adapters  int64
+	vc_connect    int64
+	vc_disconnect int64
 }
 
 func main() {
@@ -215,6 +220,10 @@ func main() {
 											if adapter_cnt > report.esx_adapters {
 												report.esx_adapters = adapter_cnt
 											}
+										} else if vc_connect_regexp.MatchString(line) {
+											report.vc_connect++;
+										} else if vc_disconnect_regexp.MatchString(line) {
+											report.vc_disconnect++;
 										} else if reconfig_match := reconfig_regexp.FindStringSubmatch(line); len(reconfig_match) > 1 {
 											if reconfig_match[1] == "execute_task" {
 												report.step++
@@ -303,7 +312,7 @@ func main() {
 					}
 
 					fmt.Println(fmt.Sprintf(
-						"%s, %s, /%s, %s, %s, %s, %s, %s, %.2f, %.2f, %.2f, %.2f, %.2f%%, %d, %d, %d, %d",
+						"%s, %s, /%s, %s, %s, %s, %s, %s, %.2f, %.2f, %.2f, %.2f, %.2f%%, %d, %d, %d, %d, %d, %d",
 						k,
 						v.method,
 						v.route,
@@ -320,7 +329,9 @@ func main() {
 						len(v.mounts),
 						v.errors,
 						v.vc_adapters,
-						v.esx_adapters))
+						v.esx_adapters,
+						v.vc_connect,
+						v.vc_disconnect))
 				} else {
 					msg("missing method or time_end for " + k)
 				}
