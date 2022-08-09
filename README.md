@@ -144,6 +144,8 @@ Alternatively you can run this command:
 
 Things someone can do to improve this:
 
+- Start making sub-directories and modules for the functions
+-- https://linguinecode.com/post/how-to-import-local-files-packages-in-golang
 - Allow processing of multiple files (to account for load balanced Managers)
 - Add ability to specify user and computer directly instead of a -find=regexp
 - Add ability to hide entire requests if a -hide="regexp" matches a line in that request (call it -hide_full)
