@@ -33,7 +33,7 @@ var error_regexp     *regexp.Regexp = regexp.MustCompile("( ERROR | Exception | 
 var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) [A-Za-z ]+ in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms\\)")
 var reconfig_regexp  *regexp.Regexp = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
 var result_regexp    *regexp.Regexp = regexp.MustCompile(" with result \\\"([a-z]+)\\\"")
-var route_regexp     *regexp.Regexp = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/([-a-zA-Z0-9_/]+)(\\?|\\\")")
+var route_regexp     *regexp.Regexp = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/(\\S+?)?(\\?|\\\")")
 var message_regexp   *regexp.Regexp = regexp.MustCompile(" P[0-9]+.*? [A-Z]+ (.*)")
 var strip_regexp     *regexp.Regexp = regexp.MustCompile("(_|-)?[0-9]+([_a-zA-Z0-9%!-]+)?")
 var computer_regexp  *regexp.Regexp = regexp.MustCompile("workstation=(.*?)&")
