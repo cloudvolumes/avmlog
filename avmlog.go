@@ -30,7 +30,7 @@ var ntlm_regexp      *regexp.Regexp = regexp.MustCompile(" (\\(NTLM\\)|NTLM:) ")
 var debug_regexp     *regexp.Regexp = regexp.MustCompile(" DEBUG ")
 var error_regexp     *regexp.Regexp = regexp.MustCompile("( ERROR | Exception | undefined | NilClass )")
 
-var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) [A-Za-z ]+ in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms\\)")
+var complete_regexp  *regexp.Regexp = regexp.MustCompile(" Completed ([0-9]+) [A-Za-z ]+ in ([0-9.]+)ms \\(Views: ([0-9.]+)ms \\| ActiveRecord: ([0-9.]+)ms \\| Allocations: [0-9.]+\\)")
 var reconfig_regexp  *regexp.Regexp = regexp.MustCompile(" RvSphere: Waking up in ReconfigVm#([a-z_]+) ")
 var result_regexp    *regexp.Regexp = regexp.MustCompile(" with result \\\"([a-z]+)\\\"")
 var route_regexp     *regexp.Regexp = regexp.MustCompile(" INFO Started ([A-Z]+) \\\"\\/(\\S+?)?(\\?|\\\")")
